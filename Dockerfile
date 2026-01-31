@@ -16,11 +16,13 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Claude CLI
+# Install Claude CLI (official installation method - using trusted https://claude.ai source)
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# Install Beads binary
-RUN wget -q https://github.com/steveyegge/beads/releases/download/v${BEADS_VERSION}/beads_${BEADS_VERSION}_linux_amd64.tar.gz -O /tmp/beads.tar.gz && \
+# Install Beads binary with checksum verification
+RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b03237b" && \
+    wget -q https://github.com/steveyegge/beads/releases/download/v${BEADS_VERSION}/beads_${BEADS_VERSION}_linux_amd64.tar.gz -O /tmp/beads.tar.gz && \
+    echo "${BEADS_SHA256}  /tmp/beads.tar.gz" | sha256sum -c - && \
     tar xzf /tmp/beads.tar.gz -C /usr/local/bin && \
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
