@@ -52,6 +52,9 @@ RUN --mount=type=secret,id=github_token \
     cp -r /tmp/ai-coding-utils/beads /opt/ai-coding-utils/ && \
     rm -rf /tmp/ai-coding-utils
 
+# Install ai-coding-utils Python dependencies
+RUN uv pip install --system requests pyyaml
+
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils:${PYTHONPATH}"
 
