@@ -42,7 +42,7 @@ jobs:
           context: .
           push: true
           secrets: |
-            github_token=${{ secrets.GITHUB_TOKEN }}
+            github_token=${{ secrets.GH_SUBMODULE_TOKEN }}
           build-args: |
             AI_CODING_UTILS_VERSION=main
             DEV_INFRA_VERSION=main
