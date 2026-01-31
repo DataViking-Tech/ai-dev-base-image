@@ -37,7 +37,7 @@ RUN --mount=type=secret,id=github_token \
         git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
             https://github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
     fi && \
-    pip3 install --no-cache-dir /tmp/ai-coding-utils && \
+    pip3 install --no-cache-dir --break-system-packages /tmp/ai-coding-utils && \
     rm -rf /tmp/ai-coding-utils
 
 # Clone and embed dev-infra components (with authentication for private repo)
