@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/ai-dev-base
+  IMAGE_NAME: dataviking-tech/ai-dev-base
 
 jobs:
   build-and-push:
