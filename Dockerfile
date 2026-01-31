@@ -11,10 +11,13 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     python3 \
-    python3-pip \
     python3-venv \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+# Install uv (Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
 # Install Claude CLI (official installation method - using trusted https://claude.ai source)
 RUN curl -fsSL https://claude.ai/install.sh | bash
@@ -37,7 +40,7 @@ RUN --mount=type=secret,id=github_token \
         git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
             https://github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
     fi && \
-    pip3 install --no-cache-dir --break-system-packages /tmp/ai-coding-utils && \
+    uv pip install --system /tmp/ai-coding-utils && \
     rm -rf /tmp/ai-coding-utils
 
 # Clone and embed dev-infra components (with authentication for private repo)
