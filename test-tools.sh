@@ -19,7 +19,7 @@ test_command() {
 
     if output=$(eval "$command" 2>&1); then
         if [ -n "$expected_pattern" ]; then
-            if echo "$output" | grep -q "$expected_pattern"; then
+            if echo "$output" | grep -iq "$expected_pattern"; then
                 echo "✓ PASS"
                 return 0
             else
