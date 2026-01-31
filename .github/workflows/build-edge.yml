@@ -41,6 +41,8 @@ jobs:
         with:
           context: .
           push: true
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             AI_CODING_UTILS_VERSION=main
             DEV_INFRA_VERSION=main

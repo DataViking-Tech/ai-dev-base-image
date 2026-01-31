@@ -27,15 +27,29 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
 
-# Clone and install ai-coding-utils
-RUN git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
-    https://github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils && \
+# Clone and install ai-coding-utils (with authentication for private repo)
+RUN --mount=type=secret,id=github_token \
+    if [ -f /run/secrets/github_token ]; then \
+        export GH_TOKEN=$(cat /run/secrets/github_token); \
+        git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
+            https://x-access-token:${GH_TOKEN}@github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
+    else \
+        git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
+            https://github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
+    fi && \
     pip3 install --no-cache-dir /tmp/ai-coding-utils && \
     rm -rf /tmp/ai-coding-utils
 
-# Clone and embed dev-infra components
-RUN git clone --depth 1 --branch ${DEV_INFRA_VERSION} \
-    https://github.com/DataViking-Tech/dev-infra.git /tmp/dev-infra && \
+# Clone and embed dev-infra components (with authentication for private repo)
+RUN --mount=type=secret,id=github_token \
+    if [ -f /run/secrets/github_token ]; then \
+        export GH_TOKEN=$(cat /run/secrets/github_token); \
+        git clone --depth 1 --branch ${DEV_INFRA_VERSION} \
+            https://x-access-token:${GH_TOKEN}@github.com/DataViking-Tech/dev-infra.git /tmp/dev-infra; \
+    else \
+        git clone --depth 1 --branch ${DEV_INFRA_VERSION} \
+            https://github.com/DataViking-Tech/dev-infra.git /tmp/dev-infra; \
+    fi && \
     mkdir -p /opt/dev-infra && \
     cp -r /tmp/dev-infra/devcontainer/components/* /opt/dev-infra/ && \
     cp -r /tmp/dev-infra/secrets /opt/dev-infra/ && \
