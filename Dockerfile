@@ -30,6 +30,13 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
 
+# Install Bun (JavaScript runtime and package manager)
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
+
+# Install OpenAI Codex CLI
+RUN bun install -g @openai/codex
+
 # Clone and embed ai-coding-utils (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
     if [ -f /run/secrets/github_token ]; then \
@@ -67,6 +74,11 @@ RUN --mount=type=secret,id=github_token \
 # Copy auto-source script
 COPY ai-dev-utils.sh /etc/profile.d/ai-dev-utils.sh
 RUN chmod +x /etc/profile.d/ai-dev-utils.sh
+
+# Copy and run test script
+COPY test-tools.sh /usr/local/bin/test-tools.sh
+RUN chmod +x /usr/local/bin/test-tools.sh && \
+    /usr/local/bin/test-tools.sh
 
 # Set working directory
 WORKDIR /workspace
