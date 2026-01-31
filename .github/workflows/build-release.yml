@@ -18,29 +18,45 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version from tag
+      - name: Extract and validate version from tag
         id: version
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-          # Extract major.minor.patch
+          # Validate semantic version format
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: Tag must match semantic version format (v*.*.*)  Got: $TAG"
+            exit 1
+          fi
+
+          # Extract major.minor.patch with validation
           MAJOR=$(echo $TAG | sed 's/v\([0-9]*\)\..*/\1/')
           MINOR=$(echo $TAG | sed 's/v[0-9]*\.\([0-9]*\)\..*/\1/')
+
+          # Verify extraction succeeded
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ]; then
+            echo "Error: Failed to extract version components from tag: $TAG"
+            exit 1
+          fi
+
           echo "major=$MAJOR" >> $GITHUB_OUTPUT
           echo "minor=$MINOR" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
@@ -51,4 +67,8 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.version=${{ steps.version.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
