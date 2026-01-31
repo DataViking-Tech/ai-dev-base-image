@@ -30,7 +30,7 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
 
-# Clone and install ai-coding-utils (with authentication for private repo)
+# Clone and embed ai-coding-utils (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
     if [ -f /run/secrets/github_token ]; then \
         export GH_TOKEN=$(cat /run/secrets/github_token); \
@@ -40,8 +40,13 @@ RUN --mount=type=secret,id=github_token \
         git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
             https://github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
     fi && \
-    uv pip install --system /tmp/ai-coding-utils && \
+    mkdir -p /opt/ai-coding-utils && \
+    cp -r /tmp/ai-coding-utils/slack /opt/ai-coding-utils/ && \
+    cp -r /tmp/ai-coding-utils/beads /opt/ai-coding-utils/ && \
     rm -rf /tmp/ai-coding-utils
+
+# Add ai-coding-utils to PYTHONPATH
+ENV PYTHONPATH="/opt/ai-coding-utils:${PYTHONPATH}"
 
 # Clone and embed dev-infra components (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
