@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     python3 \
+    python3-pip \
     python3-venv \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -53,7 +54,7 @@ RUN --mount=type=secret,id=github_token \
     rm -rf /tmp/ai-coding-utils
 
 # Install ai-coding-utils Python dependencies
-RUN uv pip install --system requests pyyaml
+RUN python3 -m pip install --break-system-packages requests pyyaml
 
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils:${PYTHONPATH}"
