@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-venv \
     build-essential \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
@@ -34,7 +35,7 @@ RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
 # Install Claude CLI to system-wide location (accessible by all users including vscode)
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    mv /root/.local/bin/claude /usr/local/bin/claude && \
+    cp -L /root/.local/bin/claude /usr/local/bin/claude && \
     chmod +x /usr/local/bin/claude
 
 # Install Beads binary with checksum verification
