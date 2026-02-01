@@ -34,9 +34,8 @@ RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
 # Install Claude CLI to system-wide location (accessible by all users including vscode)
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    mv /root/.claude/local/claude /usr/local/bin/claude && \
-    chmod +x /usr/local/bin/claude && \
-    rm -rf /root/.claude
+    mv /root/.local/bin/claude /usr/local/bin/claude && \
+    chmod +x /usr/local/bin/claude
 
 # Install Beads binary with checksum verification
 RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b03237b" && \
