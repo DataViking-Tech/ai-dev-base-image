@@ -1,6 +1,6 @@
 {
 	"name": "AI Dev Base Image Development",
-	"image": "ghcr.io/dataviking-tech/ai-dev-base:v2.2.3",
+	"image": "ghcr.io/dataviking-tech/ai-dev-base:edge",
 	//"build": {"dockerfile": "../Dockerfile"},
 
 	"features": {
