@@ -86,6 +86,19 @@ COPY test-tools.sh /usr/local/bin/test-tools.sh
 RUN chmod +x /usr/local/bin/test-tools.sh && \
     /usr/local/bin/test-tools.sh
 
+# Bake devcontainer metadata into image for VS Code extensions
+LABEL devcontainer.metadata='[{ \
+  "customizations": { \
+    "vscode": { \
+      "extensions": [ \
+        "ms-azuretools.vscode-docker", \
+        "ms-python.python", \
+        "charliermarsh.ruff" \
+      ] \
+    } \
+  } \
+}]'
+
 # Set working directory
 WORKDIR /workspace
 
