@@ -32,7 +32,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/
 ENV UV_PYTHON_INSTALL_DIR="/usr/local/share/uv/python"
 RUN uv python install 3.11 && \
     ln -sf $(uv python find 3.11) /usr/local/bin/python3 && \
-    ln -sf $(uv python find 3.11) /usr/local/bin/python
+    ln -sf $(uv python find 3.11) /usr/local/bin/python && \
+    rm -f /usr/local/share/uv/python/*/EXTERNALLY-MANAGED
 
 # Install Claude CLI to system-wide location (accessible by all users including vscode)
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
