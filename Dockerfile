@@ -99,6 +99,11 @@ COPY test-tools.sh /usr/local/bin/test-tools.sh
 RUN chmod +x /usr/local/bin/test-tools.sh && \
     /usr/local/bin/test-tools.sh
 
+# Validate tools are accessible as the vscode user (catches permission issues)
+USER vscode
+RUN /usr/local/bin/test-tools.sh
+USER root
+
 # Bake devcontainer metadata into image for VS Code extensions
 LABEL devcontainer.metadata='[{ \
   "customizations": { \
