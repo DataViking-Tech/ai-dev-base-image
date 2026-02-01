@@ -47,7 +47,7 @@ Added to `PYTHONPATH` automatically.
 
 ### dev-infra (`/opt/dev-infra`)
 
-Shell components sourced on login via `/etc/profile.d/ai-dev-utils.sh`:
+Shell components sourced automatically in all interactive shells via `/etc/profile.d/ai-dev-utils.sh`:
 
 | Script                | Purpose                          |
 |-----------------------|----------------------------------|
