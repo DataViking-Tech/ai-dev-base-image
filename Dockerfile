@@ -104,6 +104,13 @@ COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md
 COPY ai-dev-utils.sh /etc/profile.d/ai-dev-utils.sh
 RUN chmod +x /etc/profile.d/ai-dev-utils.sh
 
+# Source ai-dev-utils.sh from bash.bashrc so non-login interactive shells get functions too
+RUN echo '' >> /etc/bash.bashrc && \
+    echo '# Source AI dev utilities for all interactive shells' >> /etc/bash.bashrc && \
+    echo 'if [ -f /etc/profile.d/ai-dev-utils.sh ]; then' >> /etc/bash.bashrc && \
+    echo '    . /etc/profile.d/ai-dev-utils.sh' >> /etc/bash.bashrc && \
+    echo 'fi' >> /etc/bash.bashrc
+
 # Copy and run test script
 COPY test-tools.sh /usr/local/bin/test-tools.sh
 RUN chmod +x /usr/local/bin/test-tools.sh && \
