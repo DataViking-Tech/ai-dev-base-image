@@ -22,7 +22,8 @@ ENV PATH="/root/.local/bin:$PATH"
 # Remove PEP 668 EXTERNALLY-MANAGED marker to allow uv to manage system Python
 RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
-# Install Claude CLI (official installation method - using trusted https://claude.ai source)
+# Install Claude CLI to system-wide location (accessible by all users including vscode)
+ENV CLAUDE_INSTALL_DIR="/usr/local"
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # Install Beads binary with checksum verification
@@ -33,12 +34,13 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
 
-# Install Bun (JavaScript runtime and package manager)
+# Install Bun to system-wide location (accessible by all users including vscode)
+ENV BUN_INSTALL="/usr/local"
 RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:$PATH"
 
-# Install OpenAI Codex CLI
-RUN bun install -g @openai/codex
+# Install OpenAI Codex CLI globally
+RUN /usr/local/bin/bun install -g @openai/codex
+ENV PATH="/usr/local/bin:$PATH"
 
 # Clone and embed ai-coding-utils (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
