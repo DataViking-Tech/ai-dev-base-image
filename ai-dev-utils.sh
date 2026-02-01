@@ -2,6 +2,12 @@
 # AI Dev Utilities - Auto-sourced on shell startup
 # Provides dev-infra components and extensible aliases
 
+# Double-source guard: skip if already loaded in this shell session
+if [ -n "${_AI_DEV_UTILS_LOADED:-}" ]; then
+    return 0 2>/dev/null || true
+fi
+_AI_DEV_UTILS_LOADED=1
+
 # Source dev-infra components if available
 if [ -d "/opt/dev-infra" ]; then
     # Credential caching framework
