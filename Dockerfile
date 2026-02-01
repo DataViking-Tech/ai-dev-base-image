@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     python3 \
-    python3-pip \
     python3-venv \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -19,6 +18,9 @@ RUN apt-get update && apt-get install -y \
 # Install uv (Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
+
+# Remove PEP 668 EXTERNALLY-MANAGED marker to allow uv to manage system Python
+RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
 # Install Claude CLI (official installation method - using trusted https://claude.ai source)
 RUN curl -fsSL https://claude.ai/install.sh | bash
@@ -53,8 +55,8 @@ RUN --mount=type=secret,id=github_token \
     cp -r /tmp/ai-coding-utils/beads /opt/ai-coding-utils/ && \
     rm -rf /tmp/ai-coding-utils
 
-# Install ai-coding-utils Python dependencies
-RUN python3 -m pip install --break-system-packages requests pyyaml
+# Install ai-coding-utils Python dependencies via uv
+RUN uv pip install --system requests pyyaml
 
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils:${PYTHONPATH}"
