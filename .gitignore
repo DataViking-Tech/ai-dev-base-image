@@ -15,3 +15,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Generated at container creation (copied from image)
+.devcontainer/UTILITIES.md

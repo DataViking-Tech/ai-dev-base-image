@@ -91,6 +91,9 @@ RUN --mount=type=secret,id=github_token \
     chmod +x /opt/dev-infra/*.sh && \
     rm -rf /tmp/dev-infra
 
+# Copy utility documentation into the image for downstream layering
+COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md
+
 # Copy auto-source script
 COPY ai-dev-utils.sh /etc/profile.d/ai-dev-utils.sh
 RUN chmod +x /etc/profile.d/ai-dev-utils.sh
@@ -119,7 +122,8 @@ LABEL devcontainer.metadata='[{ \
         "openai.chatgpt" \
       ] \
     } \
-  } \
+  }, \
+  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true" \
 }]'
 
 # Set working directory
