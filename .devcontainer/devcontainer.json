@@ -1,7 +1,7 @@
 {
 	"name": "AI Dev Base Image Development",
-	//"image": "ghcr.io/dataviking-tech/ai-dev-base:v2",
-	"build": {"dockerfile": "../Dockerfile"},
+	"image": "ghcr.io/dataviking-tech/ai-dev-base:v2",
+	//"build": {"dockerfile": "../Dockerfile"},
 
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {
