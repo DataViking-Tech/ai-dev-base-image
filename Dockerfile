@@ -29,9 +29,9 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 # Remove PEP 668 EXTERNALLY-MANAGED marker to allow uv to manage system Python
 RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
-# Install Claude CLI to system-wide location (accessible by all users including vscode)
-ENV CLAUDE_INSTALL_DIR="/usr/local"
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Install Claude CLI and move to system-wide location (accessible by all users including vscode)
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    mv /root/.local/bin/claude /usr/local/bin/claude
 
 # Install Beads binary with checksum verification
 RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b03237b" && \
