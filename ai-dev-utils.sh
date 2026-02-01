@@ -7,6 +7,8 @@ if [ -d "/opt/dev-infra" ]; then
     # Credential caching framework
     if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
         source "/opt/dev-infra/credential_cache.sh" 2>/dev/null || true
+        # Run the 3-tier auth setup for GitHub
+        setup_credential_cache "github" || true
     fi
 
     # Directory creation component
