@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
 # Build arguments for component versions
 ARG AI_CODING_UTILS_VERSION=v1.0.5
-ARG DEV_INFRA_VERSION=v1.0.4
+ARG DEV_INFRA_VERSION=v1.0.6
 ARG BEADS_VERSION=0.49.2
 
 # Install system dependencies
