@@ -93,7 +93,11 @@ LABEL devcontainer.metadata='[{ \
       "extensions": [ \
         "ms-azuretools.vscode-docker", \
         "ms-python.python", \
-        "charliermarsh.ruff" \
+        "charliermarsh.ruff", \
+        "RooVeterinaryInc.roo-cline", \
+        "sourcegraph.amp", \
+        "Anthropic.claude-code", \
+        "openai.chatgpt" \
       ] \
     } \
   } \
