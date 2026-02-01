@@ -9,7 +9,13 @@ fi
 _AI_DEV_UTILS_LOADED=1
 
 # Source dev-infra components if available
+# Note: dev-infra scripts use 'set -euo pipefail' which would pollute the
+# interactive shell. We save/restore shell options to prevent this.
 if [ -d "/opt/dev-infra" ]; then
+    # Save current shell options
+    _ai_dev_old_opts=$(set +o)
+    _ai_dev_old_shopt=$(shopt -p 2>/dev/null || true)
+
     # Credential caching framework
     if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
         source "/opt/dev-infra/credential_cache.sh" 2>/dev/null || true
@@ -31,6 +37,11 @@ if [ -d "/opt/dev-infra" ]; then
     if [ -f "/opt/dev-infra/git_hooks.sh" ]; then
         source "/opt/dev-infra/git_hooks.sh" 2>/dev/null || true
     fi
+
+    # Restore original shell options (prevents 'set -u' from persisting)
+    eval "$_ai_dev_old_opts" 2>/dev/null || true
+    eval "$_ai_dev_old_shopt" 2>/dev/null || true
+    unset _ai_dev_old_opts _ai_dev_old_shopt
 fi
 
 # Standard bash aliases

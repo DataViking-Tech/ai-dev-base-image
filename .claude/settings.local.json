@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(shopt:*)",
+      "Bash(bash:*)",
+      "Bash(env -i bash -l -c 'echo \"\"Test shell initialization\"\"; type setup_credential_cache 2>&1 || echo \"\"Function not found\"\"')",
+      "Bash(git -C /workspaces/ai-dev-base-image log --oneline -10)",
+      "Bash(git -C /workspaces/ai-dev-base-image diff HEAD)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix dev-infra shell functions unavailable in non-login shells\n\nSource ai-dev-utils.sh from /etc/bash.bashrc so non-login interactive\nshells \\(e.g. plain `bash` without `-l`\\) also get dev-infra functions\nand aliases. Add a double-source guard to prevent duplicate execution\nin login shells that source from both /etc/profile.d/ and bash.bashrc.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate UTILITIES.md to reflect non-login shell support\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}
