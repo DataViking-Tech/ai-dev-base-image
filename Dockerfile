@@ -33,7 +33,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/
 RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
 # Install Claude CLI to system-wide location (accessible by all users including vscode)
-RUN curl -fsSL https://claude.ai/install.sh | env CLAUDE_INSTALL_DIR="/usr/local/bin" bash && \
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    find /root -name "claude" -type f -executable 2>/dev/null | head -1 | xargs -I {} mv {} /usr/local/bin/claude && \
     chmod +x /usr/local/bin/claude
 
 # Install Beads binary with checksum verification
@@ -71,7 +72,7 @@ RUN --mount=type=secret,id=github_token \
 RUN uv pip install --system requests pyyaml
 
 # Add ai-coding-utils to PYTHONPATH
-ENV PYTHONPATH="/opt/ai-coding-utils:${PYTHONPATH}"
+ENV PYTHONPATH="/opt/ai-coding-utils"
 
 # Clone and embed dev-infra components (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
