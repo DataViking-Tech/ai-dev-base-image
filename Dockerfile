@@ -70,7 +70,13 @@ RUN --mount=type=secret,id=github_token \
     rm -rf /tmp/ai-coding-utils
 
 # Install ai-coding-utils Python dependencies via uv
-RUN uv pip install --system --break-system-packages --python 3.11 requests pyyaml
+RUN uv pip install --system --break-system-packages --python 3.11 \
+    requests \
+    pyyaml \
+    watchdog>=3.0.0 \
+    requests>=2.28.0 \
+    pyyaml>=6.0 \
+    python-dotenv>=1.0.0
 
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils"
