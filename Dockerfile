@@ -10,8 +10,6 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
-    python3 \
-    python3-venv \
     build-essential \
     nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -30,8 +28,11 @@ RUN (type -p wget >/dev/null || (apt-get update && apt-get install -y wget)) && 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh && \
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
-# Remove PEP 668 EXTERNALLY-MANAGED marker to allow uv to manage system Python
-RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
+# Install Python 3.11 via uv and symlink to /usr/local/bin for all users
+ENV UV_PYTHON_INSTALL_DIR="/usr/local/share/uv/python"
+RUN uv python install 3.11 && \
+    ln -sf $(uv python find 3.11) /usr/local/bin/python3 && \
+    ln -sf $(uv python find 3.11) /usr/local/bin/python
 
 # Install Claude CLI to system-wide location (accessible by all users including vscode)
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
@@ -69,7 +70,7 @@ RUN --mount=type=secret,id=github_token \
     rm -rf /tmp/ai-coding-utils
 
 # Install ai-coding-utils Python dependencies via uv
-RUN uv pip install --system requests pyyaml
+RUN uv pip install --system --break-system-packages --python 3.11 requests pyyaml
 
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils"
