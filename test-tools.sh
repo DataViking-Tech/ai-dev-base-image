@@ -41,6 +41,9 @@ test_command() {
     fi
 }
 
+# Test GitHub CLI
+test_command "GitHub CLI (gh)" "gh --version" "gh version"
+
 # Test Claude CLI
 test_command "Claude CLI" "claude --version" "claude"
 

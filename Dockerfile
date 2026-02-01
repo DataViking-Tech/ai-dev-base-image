@@ -16,22 +16,25 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
-    chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+RUN (type -p wget >/dev/null || (apt-get update && apt-get install -y wget)) && \
+    mkdir -p -m 755 /etc/apt/keyrings && \
+    out=$(mktemp) && wget -qO "$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg && \
+    cat "$out" | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
     apt-get update && apt-get install -y gh && \
     rm -rf /var/lib/apt/lists/*
 
 # Install uv (Python package manager) to system-wide location
-ENV UV_INSTALL_DIR="/usr/local/bin"
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh && \
+    chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
 # Remove PEP 668 EXTERNALLY-MANAGED marker to allow uv to manage system Python
 RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
-# Install Claude CLI and move to system-wide location (accessible by all users including vscode)
-RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    mv /root/.local/bin/claude /usr/local/bin/claude
+# Install Claude CLI to system-wide location (accessible by all users including vscode)
+RUN curl -fsSL https://claude.ai/install.sh | env CLAUDE_INSTALL_DIR="/usr/local/bin" bash && \
+    chmod +x /usr/local/bin/claude
 
 # Install Beads binary with checksum verification
 RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b03237b" && \
@@ -42,12 +45,12 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     rm /tmp/beads.tar.gz
 
 # Install Bun to system-wide location (accessible by all users including vscode)
-ENV BUN_INSTALL="/usr/local"
-RUN curl -fsSL https://bun.sh/install | bash
+RUN curl -fsSL https://bun.sh/install | env BUN_INSTALL="/usr/local" bash
 
-# Install OpenAI Codex CLI globally
-RUN /usr/local/bin/bun install -g @openai/codex
-ENV PATH="/usr/local/bin:$PATH"
+# Install OpenAI Codex CLI globally and symlink to /usr/local/bin
+ENV BUN_INSTALL_BIN="/usr/local/bin"
+RUN /usr/local/bin/bun install -g @openai/codex && \
+    ln -sf /usr/local/bin/codex /usr/local/bin/codex 2>/dev/null || true
 
 # Clone and embed ai-coding-utils (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
