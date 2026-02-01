@@ -46,12 +46,11 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     rm /tmp/beads.tar.gz
 
 # Install Bun to system-wide location (accessible by all users including vscode)
-RUN curl -fsSL https://bun.sh/install | env BUN_INSTALL="/usr/local" bash
+ENV BUN_INSTALL="/usr/local"
+RUN curl -fsSL https://bun.sh/install | bash
 
-# Install OpenAI Codex CLI globally and symlink to /usr/local/bin
-ENV BUN_INSTALL_BIN="/usr/local/bin"
-RUN /usr/local/bin/bun install -g @openai/codex && \
-    ln -sf /usr/local/bin/codex /usr/local/bin/codex 2>/dev/null || true
+# Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
+RUN bun install -g @openai/codex
 
 # Clone and embed ai-coding-utils (with authentication for private repo)
 RUN --mount=type=secret,id=github_token \
