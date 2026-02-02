@@ -143,8 +143,11 @@ LABEL devcontainer.metadata='[{ \
         "sourcegraph.amp", \
         "Anthropic.claude-code", \
         "openai.chatgpt" \
-      ] \
-    } \
+      ], \
+      "settings": { \
+        "npm.packageManager": "bun" \
+      } \
+    }, \
   }, \
   "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true" \
 }]'
