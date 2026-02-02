@@ -34,14 +34,6 @@ RUN uv python install 3.11 && \
     ln -sf $(uv python find 3.11) /usr/local/bin/python3 && \
     ln -sf $(uv python find 3.11) /usr/local/bin/python
 
-# Install Claude CLI to system-wide location (accessible by all users including vscode)
-RUN mkdir -p /home/vscode/.claude && \
-    chown -R vscode /home/vscode/.claude
-
-RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    cp -L /root/.local/bin/claude /usr/local/bin/claude && \
-    chmod +x /usr/local/bin/claude
-
 # Install Beads binary with checksum verification
 RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b03237b" && \
     wget -q https://github.com/steveyegge/beads/releases/download/v${BEADS_VERSION}/beads_${BEADS_VERSION}_linux_amd64.tar.gz -O /tmp/beads.tar.gz && \
@@ -53,6 +45,9 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
 # Install Bun to system-wide location (accessible by all users including vscode)
 ENV BUN_INSTALL="/usr/local"
 RUN curl -fsSL https://bun.sh/install | bash
+
+# Install Claude Code CLI globally via bun
+RUN bun install -g @anthropic-ai/claude-code
 
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex
