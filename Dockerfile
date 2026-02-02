@@ -46,8 +46,12 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
 ENV BUN_INSTALL="/usr/local"
 RUN curl -fsSL https://bun.sh/install | bash
 
-# Install Claude Code CLI globally via bun
-RUN bun install -g @anthropic-ai/claude-code
+# Install Claude Code CLI for vscode user and symlink to system path
+USER vscode
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+USER root
+RUN ln -sf /home/vscode/.local/bin/claude /usr/local/bin/claude
 
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex
