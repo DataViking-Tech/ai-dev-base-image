@@ -20,7 +20,8 @@
 	},
 
 	"mounts": [
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    	"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind"
 	],
 
 	"postCreateCommand": "echo 'Using ai-dev-base:v2 to develop next version'",
