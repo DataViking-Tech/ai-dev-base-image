@@ -126,6 +126,10 @@ USER root
 
 # Bake devcontainer metadata into image for VS Code extensions
 LABEL devcontainer.metadata='[{ \
+  "mounts": [ \
+	"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind", \
+    "source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume" \
+  ], \
   "customizations": { \
     "vscode": { \
       "extensions": [ \
