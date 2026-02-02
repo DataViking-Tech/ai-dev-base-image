@@ -20,59 +20,30 @@ if [ -d "/opt/dev-infra" ]; then
     if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
         source "/opt/dev-infra/credential_cache.sh" 2>/dev/null || true
 
-        # Claude Code credential caching (mirrors setup_github_auth pattern)
-        # Symlinks ~/.claude/.credentials.json to workspace cache so logins
-        # persist across container rebuilds and new logins auto-cache.
+        # Claude Code credential check
+        # Credentials persist via Docker volume mount at ~/.claude (see Dockerfile)
         setup_claude_auth() {
-          local CLAUDE_CACHE_DIR="$AUTH_DIR/claude-credentials"
-          local CACHED_CREDS="$CLAUDE_CACHE_DIR/.credentials.json"
-          local CLAUDE_DIR="$HOME/.claude"
-          local CLAUDE_CREDS="$CLAUDE_DIR/.credentials.json"
+          local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
 
           if ! command -v claude >/dev/null 2>&1; then
             echo "⚠ Claude CLI not installed, skipping Claude auth"
             return 1
           fi
 
-          mkdir -p "$CLAUDE_CACHE_DIR"
-          chmod 700 "$CLAUDE_CACHE_DIR"
-          mkdir -p "$CLAUDE_DIR"
-
-          # Migrate: if credentials exist in default location but not in cache, copy them
-          if [ ! -f "$CACHED_CREDS" ] && [ -f "$CLAUDE_CREDS" ] && [ ! -L "$CLAUDE_CREDS" ]; then
-            cp "$CLAUDE_CREDS" "$CACHED_CREDS"
-            chmod 600 "$CACHED_CREDS"
-          fi
-
-          # Always ensure symlink points to cache location.
-          # This is critical: even when no cached creds exist yet, the symlink
-          # ensures that `claude login` writes credentials directly into the
-          # cache directory, so they persist across container rebuilds.
-          if [ ! -L "$CLAUDE_CREDS" ] || [ "$(readlink "$CLAUDE_CREDS")" != "$CACHED_CREDS" ]; then
-            rm -f "$CLAUDE_CREDS"
-            ln -s "$CACHED_CREDS" "$CLAUDE_CREDS"
-          fi
-
-          # Tier 1: Cached credentials available
-          if [ -f "$CACHED_CREDS" ]; then
-            echo "✓ Claude Code authenticated (cached)"
+          if [ -f "$CLAUDE_CREDS" ]; then
+            echo "✓ Claude Code authenticated"
             return 0
           fi
 
-          # Tier 2: ANTHROPIC_API_KEY environment variable
           if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
             echo "✓ Claude Code: ANTHROPIC_API_KEY detected"
             return 0
           fi
 
-          # Tier 3: Interactive fallback
           echo ""
           echo "⚠ Claude Code not authenticated. Please run:"
           echo "  claude login"
           echo ""
-          echo "Your credentials will be cached across container rebuilds."
-          echo ""
-
           return 0
         }
 
