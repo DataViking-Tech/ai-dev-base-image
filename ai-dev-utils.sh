@@ -44,12 +44,17 @@ if [ -d "/opt/dev-infra" ]; then
             chmod 600 "$CACHED_CREDS"
           fi
 
-          # Tier 1: Restore cached credentials via symlink
+          # Always ensure symlink points to cache location.
+          # This is critical: even when no cached creds exist yet, the symlink
+          # ensures that `claude login` writes credentials directly into the
+          # cache directory, so they persist across container rebuilds.
+          if [ ! -L "$CLAUDE_CREDS" ] || [ "$(readlink "$CLAUDE_CREDS")" != "$CACHED_CREDS" ]; then
+            rm -f "$CLAUDE_CREDS"
+            ln -s "$CACHED_CREDS" "$CLAUDE_CREDS"
+          fi
+
+          # Tier 1: Cached credentials available
           if [ -f "$CACHED_CREDS" ]; then
-            if [ ! -L "$CLAUDE_CREDS" ] || [ "$(readlink "$CLAUDE_CREDS")" != "$CACHED_CREDS" ]; then
-              rm -f "$CLAUDE_CREDS"
-              ln -s "$CACHED_CREDS" "$CLAUDE_CREDS"
-            fi
             echo "✓ Claude Code authenticated (cached)"
             return 0
           fi
