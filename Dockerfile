@@ -35,6 +35,9 @@ RUN uv python install 3.11 && \
     ln -sf $(uv python find 3.11) /usr/local/bin/python
 
 # Install Claude CLI to system-wide location (accessible by all users including vscode)
+RUN mkdir -p /home/vscode/.claude && \
+    chown -R vscode /home/vscode/.claude
+
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
     cp -L /root/.local/bin/claude /usr/local/bin/claude && \
     chmod +x /usr/local/bin/claude
