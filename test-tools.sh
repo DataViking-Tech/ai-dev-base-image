@@ -79,7 +79,9 @@ echo -n "Testing dev-infra components... "
 if [ -f /opt/dev-infra/credential_cache.sh ] && \
    [ -f /opt/dev-infra/directories.sh ] && \
    [ -f /opt/dev-infra/python_venv.sh ] && \
-   [ -f /opt/dev-infra/git_hooks.sh ]; then
+   [ -f /opt/dev-infra/git_hooks.sh ] && \
+   [ -f /opt/dev-infra/setup/project_setup.sh ] && \
+   [ -f /opt/dev-infra/secrets/manager.py ]; then
     echo "✓ PASS"
 else
     echo "✗ FAIL (missing components)"

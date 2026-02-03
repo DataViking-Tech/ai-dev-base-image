@@ -72,8 +72,6 @@ jobs:
         with:
           context: .
           push: true
-          secrets: |
-            github_token=${{ secrets.GH_SUBMODULE_TOKEN }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}

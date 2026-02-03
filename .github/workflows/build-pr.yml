@@ -31,11 +31,6 @@ jobs:
           context: .
           push: false
           load: true
-          secrets: |
-            github_token=${{ secrets.GH_SUBMODULE_TOKEN }}
-          build-args: |
-            AI_CODING_UTILS_VERSION=main
-            DEV_INFRA_VERSION=main
           tags: ${{ env.IMAGE_NAME }}:${{ github.event.pull_request.number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml watchdog python-dotenv
+
+      - name: Run ai-coding-utils tests
+        env:
+          PYTHONPATH: lib/ai-coding-utils
+        run: python -m unittest discover -s lib/ai-coding-utils/tests -p "test_*.py"
+
+      - name: Run dev-infra Python tests
+        env:
+          PYTHONPATH: lib/dev-infra
+        run: python -m unittest discover -s lib/dev-infra/tests -p "test_*.py"
+
+  bash-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run credential cache tests
+        run: bash lib/dev-infra/tests/test_credential_cache_core.sh

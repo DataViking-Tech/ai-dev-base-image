@@ -1,8 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
-# Build arguments for component versions
-ARG AI_CODING_UTILS_VERSION=v1.0.5
-ARG DEV_INFRA_VERSION=v1.0.6
+# Build arguments for external binary versions
 ARG BEADS_VERSION=0.49.2
 ARG GASTOWN_VERSION=0.5.0
 
@@ -67,48 +65,25 @@ RUN ln -sf /home/vscode/.local/bin/claude /usr/local/bin/claude
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex
 
-# Clone and embed ai-coding-utils (with authentication for private repo)
-RUN --mount=type=secret,id=github_token \
-    if [ -f /run/secrets/github_token ]; then \
-        export GH_TOKEN=$(cat /run/secrets/github_token); \
-        git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
-            https://x-access-token:${GH_TOKEN}@github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
-    else \
-        git clone --depth 1 --branch ${AI_CODING_UTILS_VERSION} \
-            https://github.com/DataViking-Tech/ai-coding-utils.git /tmp/ai-coding-utils; \
-    fi && \
-    mkdir -p /opt/ai-coding-utils && \
-    cp -r /tmp/ai-coding-utils/slack /opt/ai-coding-utils/ && \
-    cp -r /tmp/ai-coding-utils/beads /opt/ai-coding-utils/ && \
-    rm -rf /tmp/ai-coding-utils
+# Embed ai-coding-utils (slack notifications + beads hooks)
+COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
+COPY lib/ai-coding-utils/beads /opt/ai-coding-utils/beads
 
-# Install ai-coding-utils Python dependencies via uv
+# Install Python dependencies for embedded libraries
 RUN uv pip install --system --break-system-packages --python 3.11 \
-    requests \
-    pyyaml \
-    watchdog>=3.0.0 \
     requests>=2.28.0 \
     pyyaml>=6.0 \
+    watchdog>=3.0.0 \
     python-dotenv>=1.0.0
 
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils"
 
-# Clone and embed dev-infra components (with authentication for private repo)
-RUN --mount=type=secret,id=github_token \
-    if [ -f /run/secrets/github_token ]; then \
-        export GH_TOKEN=$(cat /run/secrets/github_token); \
-        git clone --depth 1 --branch ${DEV_INFRA_VERSION} \
-            https://x-access-token:${GH_TOKEN}@github.com/DataViking-Tech/dev-infra.git /tmp/dev-infra; \
-    else \
-        git clone --depth 1 --branch ${DEV_INFRA_VERSION} \
-            https://github.com/DataViking-Tech/dev-infra.git /tmp/dev-infra; \
-    fi && \
-    mkdir -p /opt/dev-infra && \
-    cp -r /tmp/dev-infra/devcontainer/components/* /opt/dev-infra/ && \
-    cp -r /tmp/dev-infra/secrets /opt/dev-infra/ && \
-    chmod +x /opt/dev-infra/*.sh && \
-    rm -rf /tmp/dev-infra
+# Embed dev-infra (devcontainer components, secrets manager, project setup)
+COPY lib/dev-infra/components/ /opt/dev-infra/
+COPY lib/dev-infra/secrets /opt/dev-infra/secrets
+COPY lib/dev-infra/setup /opt/dev-infra/setup
+RUN chmod +x /opt/dev-infra/*.sh /opt/dev-infra/setup/*.sh
 
 # Copy utility documentation into the image for downstream layering
 COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md

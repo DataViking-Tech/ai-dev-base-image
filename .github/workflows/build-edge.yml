@@ -42,11 +42,6 @@ jobs:
         with:
           context: .
           push: true
-          secrets: |
-            github_token=${{ secrets.GH_SUBMODULE_TOKEN }}
-          build-args: |
-            AI_CODING_UTILS_VERSION=main
-            DEV_INFRA_VERSION=main
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:edge
           labels: |
