@@ -14,6 +14,8 @@
 | `wget`            | Network file retrieval                   |
 | `build-essential` | GCC, make, and core build toolchain      |
 | `nodejs`          | JavaScript runtime (system package)      |
+| `tmux`            | Terminal multiplexer (agent sessions)    |
+| `sqlite3`         | SQLite CLI (convoy database queries)     |
 
 ## Python & Package Managers
 
@@ -32,6 +34,7 @@
 | `codex`    | OpenAI Codex CLI (installed globally via Bun)        |
 | `gh`       | GitHub CLI — repo, PR, and issue management          |
 | `bd`       | Beads — issue tracking for AI workflows              |
+| `gt`       | Gastown — multi-agent orchestration CLI               |
 
 ## Embedded Components
 
@@ -58,6 +61,40 @@ Shell components sourced automatically in all interactive shells via `/etc/profi
 
 Also includes a `secrets/` module for secrets management.
 
+### Gastown (`~/gt`)
+
+Multi-agent orchestration for Claude Code sessions. Gastown manages agent coordination, inter-agent messaging, and cost tracking.
+
+**Automatic setup:** On first shell login, `setup_gastown` initializes a workspace at `~/gt/` (persisted via Docker volume) and merges hooks into `~/.claude/settings.json`.
+
+**Claude Code hooks configured automatically:**
+
+| Hook Event         | What it does                                      |
+|--------------------|---------------------------------------------------|
+| `SessionStart`     | Primes the agent context with workspace state     |
+| `PreCompact`       | Re-primes context before compaction               |
+| `UserPromptSubmit` | Checks for inter-agent mail and injects messages  |
+| `PreToolUse`       | Guards PR workflows (branch creation, PR creation)|
+| `Stop`             | Records session cost data                         |
+
+**Common commands:**
+
+```bash
+gt status          # Show workspace and agent status
+gt doctor          # Health check for gastown installation
+gt mail check      # Check for messages from other agents
+gt mail send       # Send a message to another agent
+gt costs show      # View recorded session costs
+gt prime           # Prime agent context with workspace state
+gt tap guard       # Run a tap guard (e.g., pr-workflow)
+```
+
+**Environment:**
+
+| Variable        | Default     | Description                  |
+|-----------------|-------------|------------------------------|
+| `GASTOWN_HOME`  | `$HOME/gt`  | Gastown workspace directory  |
+
 ## Shell Aliases
 
 Defined in `/etc/profile.d/ai-dev-utils.sh` and available in every shell:
@@ -69,6 +106,8 @@ Defined in `/etc/profile.d/ai-dev-utils.sh` and available in every shell:
 | `bd-list`  | `bd list`   |
 | `py`       | `python3`   |
 | `pip`      | `pip3`      |
+| `gt-status`| `gt status` |
+| `gt-doctor`| `gt doctor` |
 
 Projects can add custom aliases by placing a file at
 `/workspace/.devcontainer/aliases.sh` — it is sourced automatically.

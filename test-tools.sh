@@ -56,6 +56,12 @@ test_command "uv" "uv --version" "uv"
 # Test bun
 test_command "Bun" "bun --version" "[0-9]"
 
+# Test Gastown
+test_command "Gastown (gt)" "gt --version" "gt version"
+
+# Test tmux
+test_command "tmux" "tmux -V" "tmux"
+
 # Test OpenAI Codex CLI
 test_command "OpenAI Codex CLI" "codex --version || which codex" ""
 

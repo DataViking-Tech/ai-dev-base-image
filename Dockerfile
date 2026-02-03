@@ -4,6 +4,7 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 ARG AI_CODING_UTILS_VERSION=v1.0.5
 ARG DEV_INFRA_VERSION=v1.0.6
 ARG BEADS_VERSION=0.49.2
+ARG GASTOWN_VERSION=0.5.0
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -12,6 +13,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     build-essential \
     nodejs \
+    tmux \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
@@ -41,6 +44,14 @@ RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b0323
     tar xzf /tmp/beads.tar.gz -C /usr/local/bin && \
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
+
+# Install Gastown binary with checksum verification
+RUN GASTOWN_SHA256="438245c0ac91a42eead4a1b1b744b505a1f7042a274239e659980f67b7886780" && \
+    wget -q https://github.com/steveyegge/gastown/releases/download/v${GASTOWN_VERSION}/gastown_${GASTOWN_VERSION}_linux_amd64.tar.gz -O /tmp/gastown.tar.gz && \
+    echo "${GASTOWN_SHA256}  /tmp/gastown.tar.gz" | sha256sum -c - && \
+    tar xzf /tmp/gastown.tar.gz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/gt && \
+    rm /tmp/gastown.tar.gz
 
 # Install Bun to system-wide location (accessible by all users including vscode)
 ENV BUN_INSTALL="/usr/local"
@@ -131,7 +142,8 @@ LABEL devcontainer.metadata='[{ \
   }, \
   "mounts": [ \
 	"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind", \
-    "source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume" \
+    "source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume", \
+    "source=gastown-data-${devcontainerId},target=/home/vscode/gt,type=volume" \
   ], \
   "customizations": { \
     "vscode": { \
