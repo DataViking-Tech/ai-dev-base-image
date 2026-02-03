@@ -59,8 +59,13 @@ if [ -d "/opt/dev-infra" ]; then
 
         export GASTOWN_HOME="${GASTOWN_HOME:-$HOME/gt}"
 
+        # Fix ownership if the directory was created by a Docker volume mount (root-owned)
+        if [ -d "$GASTOWN_HOME" ] && [ "$(stat -c '%u' "$GASTOWN_HOME" 2>/dev/null)" != "$(id -u)" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$GASTOWN_HOME" 2>/dev/null || true
+        fi
+
         # Initialize workspace if not already present
-        if [ ! -d "$GASTOWN_HOME/.gastown" ]; then
+        if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
             gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
         fi
 
