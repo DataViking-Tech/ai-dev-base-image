@@ -147,7 +147,7 @@ LABEL devcontainer.metadata='[{ \
       "settings": { \
         "npm.packageManager": "bun" \
       } \
-    }, \
+    } \
   }, \
   "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true" \
 }]'
