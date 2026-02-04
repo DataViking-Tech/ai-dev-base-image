@@ -114,9 +114,15 @@ export -f get_workspace_root
 # Now source the component (it will use our mocked get_workspace_root)
 source "$PROJECT_ROOT/components/credential_cache.sh"
 
+# Helper: clear sentinel to ensure each test runs the full auth check
+clear_gh_sentinel() {
+  rm -f "$AUTH_DIR/.gh-auth-checked"
+}
+
 # Test 1: Unknown service handling
 echo ""
 echo "Test 1: Unknown service handling"
+clear_gh_sentinel
 OUTPUT=$(setup_credential_cache "unknown_service" 2>&1)
 if echo "$OUTPUT" | grep -q "Unknown service"; then
   assert_success "Unknown service returns warning"
@@ -127,6 +133,7 @@ fi
 # Test 2: GitHub auth without gh CLI
 echo ""
 echo "Test 2: GitHub auth without gh CLI"
+clear_gh_sentinel
 if ! command -v gh >/dev/null 2>&1; then
   OUTPUT=$(setup_github_auth 2>&1)
   if echo "$OUTPUT" | grep -q "not installed"; then
@@ -141,6 +148,7 @@ fi
 # Test 3: Function returns 0 (non-blocking)
 echo ""
 echo "Test 3: Non-blocking behavior"
+clear_gh_sentinel
 if setup_credential_cache "github" >/dev/null 2>&1; then
   assert_success "setup_credential_cache returns 0"
 else
@@ -150,6 +158,7 @@ fi
 # Test 4: GitHub Tier 1 - Cached credentials
 echo ""
 echo "Test 4: GitHub Tier 1 (cached credentials)"
+clear_gh_sentinel
 if command -v gh >/dev/null 2>&1; then
   # Create cached hosts.yml
   mkdir -p "$AUTH_DIR/gh-config"
@@ -174,6 +183,7 @@ fi
 # Test 5: GitHub Tier 2 - GITHUB_TOKEN conversion
 echo ""
 echo "Test 5: GitHub Tier 2 (GITHUB_TOKEN conversion)"
+clear_gh_sentinel
 if command -v gh >/dev/null 2>&1; then
   # Mock gh auth login to simulate success
   gh() {
@@ -275,6 +285,7 @@ rm -rf "$HOME/.wrangler/config"
 # Test 8: Permission validation - GitHub
 echo ""
 echo "Test 8: GitHub directory permissions"
+clear_gh_sentinel
 if command -v gh >/dev/null 2>&1; then
   mkdir -p "$AUTH_DIR/gh-config"
   chmod 755 "$AUTH_DIR/gh-config"  # Start with wrong permissions
@@ -311,6 +322,99 @@ assert_perms "$AUTH_DIR/wrangler" "700" "Cloudflare sets correct wrangler direct
 # Cleanup
 rm -rf "$AUTH_DIR/wrangler"
 rm -f "$AUTH_DIR/cloudflare_api_token"
+
+# Test 10: Sentinel file skips repeated auth checks
+echo ""
+echo "Test 10: Sentinel file prevents repeated auth checks"
+clear_gh_sentinel
+if command -v gh >/dev/null 2>&1; then
+  # First call: creates sentinel
+  mkdir -p "$AUTH_DIR/gh-config"
+  cat > "$AUTH_DIR/gh-config/hosts.yml" << EOF
+github.com:
+    user: testuser
+    oauth_token: test_token_123
+    git_protocol: https
+EOF
+  setup_github_auth >/dev/null 2>&1
+  assert_file_exists "$AUTH_DIR/.gh-auth-checked" "Sentinel file created after first auth check"
+
+  # Second call: should return immediately (no output)
+  rm -rf "$AUTH_DIR/gh-config"  # Remove hosts.yml to prove sentinel skips the check
+  OUTPUT=$(setup_github_auth 2>&1)
+  if [ -z "$OUTPUT" ]; then
+    assert_success "Sentinel skips full auth check on subsequent calls"
+  else
+    assert_failure "Sentinel skips full auth check on subsequent calls" "Got unexpected output: $OUTPUT"
+  fi
+
+  # Cleanup
+  rm -f "$AUTH_DIR/.gh-auth-checked"
+  rm -rf "$AUTH_DIR/gh-config"
+else
+  echo "⊘ SKIP: Test 10 (gh CLI not installed)"
+fi
+
+# Test 11: gh auth status fallback (Tier 2.5)
+echo ""
+echo "Test 11: gh auth status fallback detects non-file auth"
+clear_gh_sentinel
+if command -v gh >/dev/null 2>&1; then
+  # Mock gh to simulate auth working via non-file mechanism
+  gh() {
+    if [ "$1" = "auth" ] && [ "$2" = "status" ]; then
+      return 0  # Simulate authenticated
+    fi
+    command gh "$@"
+  }
+  export -f gh
+
+  # Ensure no hosts.yml and no GITHUB_TOKEN
+  rm -rf "$AUTH_DIR/gh-config/hosts.yml"
+  unset GITHUB_TOKEN 2>/dev/null || true
+
+  OUTPUT=$(setup_github_auth 2>&1)
+  assert_contains "GitHub CLI authenticated" "$OUTPUT" "gh auth status fallback detects working auth"
+
+  # Cleanup
+  unset -f gh
+  rm -f "$AUTH_DIR/.gh-auth-checked"
+else
+  echo "⊘ SKIP: Test 11 (gh CLI not installed)"
+fi
+
+# Test 12: Non-interactive shell suppresses warning
+echo ""
+echo "Test 12: Warning suppressed in non-interactive shell"
+clear_gh_sentinel
+if command -v gh >/dev/null 2>&1; then
+  # Mock gh auth status to fail (genuinely not authenticated)
+  gh() {
+    if [ "$1" = "auth" ] && [ "$2" = "status" ]; then
+      return 1  # Not authenticated
+    fi
+    command gh "$@"
+  }
+  export -f gh
+
+  # Ensure no hosts.yml and no GITHUB_TOKEN
+  rm -rf "$AUTH_DIR/gh-config/hosts.yml"
+  unset GITHUB_TOKEN 2>/dev/null || true
+
+  # Run in a subshell with stdout NOT connected to a TTY (pipe captures it)
+  OUTPUT=$(setup_github_auth 2>&1)
+  if echo "$OUTPUT" | grep -q "not authenticated"; then
+    assert_failure "Warning suppressed in non-interactive shell" "Warning was printed: $OUTPUT"
+  else
+    assert_success "Warning suppressed in non-interactive shell"
+  fi
+
+  # Cleanup
+  unset -f gh
+  rm -f "$AUTH_DIR/.gh-auth-checked"
+else
+  echo "⊘ SKIP: Test 12 (gh CLI not installed)"
+fi
 
 # Final cleanup
 rm -rf "$TEST_DIR"
