@@ -17,10 +17,10 @@ if [ -d "/opt/dev-infra" ]; then
     _ai_dev_old_shopt=$(shopt -p 2>/dev/null || true)
 
     # Credential caching framework (github, cloudflare, claude auth)
+    # Note: setup runs non-interactively via postStartCommand (start_gastown_services.sh).
+    # This interactive-shell call catches credentials added mid-session.
     if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
         source "/opt/dev-infra/credential_cache.sh" 2>/dev/null || true
-
-        # Run the 3-tier auth setup for GitHub and Claude
         setup_credential_cache "github" "claude" || true
     fi
 

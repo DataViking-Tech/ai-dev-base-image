@@ -5,8 +5,8 @@
 # "github claude" by default. Projects needing different services can
 # either:
 #
-#   Option A: Set CREDENTIAL_SERVICES env var in devcontainer.json:
-#     "containerEnv": { "CREDENTIAL_SERVICES": "github cloudflare" }
+#   Option A: Set CREDENTIAL_CACHE_SERVICES env var in devcontainer.json:
+#     "containerEnv": { "CREDENTIAL_CACHE_SERVICES": "github cloudflare" }
 #
 #   Option B: Call setup_credential_cache directly in a custom script:
 #     source /opt/dev-infra/credential_cache.sh

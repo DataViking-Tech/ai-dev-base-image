@@ -85,7 +85,7 @@ setup_github_auth() {
   fi
 
   # Tier 2: Auto-convert GITHUB_TOKEN if available
-  if [ -n "$GITHUB_TOKEN" ]; then
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "Converting GITHUB_TOKEN to cached OAuth credentials..."
     if echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; then
       echo "✓ GitHub CLI authenticated automatically via GITHUB_TOKEN"
@@ -160,8 +160,8 @@ setup_cloudflare_auth() {
   fi
 
   # Tier 2: Auto-cache CLOUDFLARE_API_TOKEN if set
-  if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
-    echo "$CLOUDFLARE_API_TOKEN" > "$CF_TOKEN_FILE"
+  if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+    echo "${CLOUDFLARE_API_TOKEN}" > "$CF_TOKEN_FILE"
     chmod 600 "$CF_TOKEN_FILE"
     echo "✓ Cloudflare API token cached from environment"
     return 0

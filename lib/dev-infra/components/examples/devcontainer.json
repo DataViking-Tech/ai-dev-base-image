@@ -5,7 +5,7 @@
   "containerEnv": {
     // Override default credential services (default: "github claude")
     // Projects needing cloudflare can set this:
-    "CREDENTIAL_SERVICES": "github cloudflare"
+    "CREDENTIAL_CACHE_SERVICES": "github cloudflare"
   },
 
   "mounts": [

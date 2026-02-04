@@ -495,10 +495,10 @@ fi
 rm -rf "$WORK_DIR" "$FAKE_OPT"
 
 # -----------------------------------------------------------
-# Test 12: CREDENTIAL_SERVICES env var overrides defaults
+# Test 12: CREDENTIAL_CACHE_SERVICES env var overrides defaults
 # -----------------------------------------------------------
 echo ""
-echo "Test 12: CREDENTIAL_SERVICES env var overrides defaults"
+echo "Test 12: CREDENTIAL_CACHE_SERVICES env var overrides defaults"
 FAKE_OPT=$(mktemp -d)
 mkdir -p "$FAKE_OPT/dev-infra/setup"
 cat > "$FAKE_OPT/dev-infra/credential_cache.sh" << 'MOCKEOF'
@@ -509,11 +509,11 @@ setup_credential_cache() {
 MOCKEOF
 sed "s|/opt/dev-infra|$FAKE_OPT/dev-infra|g" "$START_GASTOWN" > "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
 chmod +x "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
-OUTPUT=$(CREDENTIAL_SERVICES="github cloudflare" PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
+OUTPUT=$(CREDENTIAL_CACHE_SERVICES="github cloudflare" PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
 if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github cloudflare"; then
-  assert_success "CREDENTIAL_SERVICES env var overrides default services"
+  assert_success "CREDENTIAL_CACHE_SERVICES env var overrides default services"
 else
-  assert_failure "CREDENTIAL_SERVICES env var overrides default services" \
+  assert_failure "CREDENTIAL_CACHE_SERVICES env var overrides default services" \
     "Output: $OUTPUT"
 fi
 rm -rf "$FAKE_OPT"
