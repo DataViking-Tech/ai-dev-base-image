@@ -26,6 +26,18 @@ if [ -d .git ] && [ ! -d polecats ]; then
   gt init 2>/dev/null || true
 fi
 
+# Register rig with the town (idempotent)
+if [ -d .git ] && [ -d polecats ]; then
+  # Rig names can't contain hyphens/dots/spaces — replace with underscores
+  rig_name=$(basename "$PWD" | tr '-. ' '_')
+  git_url=$(git remote get-url origin 2>/dev/null || true)
+  if [ -n "$git_url" ]; then
+    if ! gt rig list 2>/dev/null | grep -q "$rig_name"; then
+      gt rig add "$rig_name" "$git_url" --local-repo "$PWD" 2>/dev/null || true
+    fi
+  fi
+fi
+
 # Ensure gastown runtime files are in .gitignore
 for entry in .events.jsonl .runtime/; do
   if [ -f .gitignore ]; then
