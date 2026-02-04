@@ -24,12 +24,19 @@ fi
 # Merge gastown hooks into Claude Code settings.json (idempotent)
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 
-# Check if hooks are already merged (Stop hook as sentinel)
+# Check if gastown hooks are already merged (Stop hook command as sentinel)
 if [ -f "$CLAUDE_SETTINGS" ] && python3 -c "
 import json, sys
 with open('$CLAUDE_SETTINGS') as f:
     data = json.load(f)
-sys.exit(0 if 'hooks' in data and 'Stop' in data['hooks'] else 1)
+hooks = data.get('hooks', {})
+stop_hooks = hooks.get('Stop', [])
+# Look for gt costs record in the correct nested format
+for entry in stop_hooks:
+    for h in entry.get('hooks', []):
+        if 'gt costs record' in h.get('command', ''):
+            sys.exit(0)
+sys.exit(1)
 " 2>/dev/null; then
   exit 0
 fi
@@ -46,26 +53,42 @@ if os.path.exists(settings_path):
 else:
     settings = {}
 
+# Claude Code hooks schema: each event maps to an array of matcher objects,
+# each containing a 'hooks' array of {type, command} entries.
+def hook_entry(command, matcher=None):
+    entry = {'hooks': [{'type': 'command', 'command': command}]}
+    if matcher:
+        entry['matcher'] = matcher
+    return entry
+
 gastown_hooks = {
-    'SessionStart': [{'command': 'gt prime --hook 2>/dev/null || true'}],
-    'PreCompact': [{'command': 'gt prime --hook 2>/dev/null || true'}],
-    'UserPromptSubmit': [{'command': 'gt mail check --inject 2>/dev/null || true'}],
+    'SessionStart': [hook_entry('gt prime --hook 2>/dev/null || true')],
+    'PreCompact': [hook_entry('gt prime --hook 2>/dev/null || true')],
+    'UserPromptSubmit': [hook_entry('gt mail check --inject 2>/dev/null || true')],
     'PreToolUse': [
-        {'matcher': 'Bash(gh pr create*)', 'command': 'gt tap guard pr-workflow 2>/dev/null || true'},
-        {'matcher': 'Bash(git checkout -b*)', 'command': 'gt tap guard pr-workflow 2>/dev/null || true'},
-        {'matcher': 'Bash(git switch -c*)', 'command': 'gt tap guard pr-workflow 2>/dev/null || true'}
+        hook_entry('gt tap guard pr-workflow 2>/dev/null || true', 'Bash(gh pr create*)'),
+        hook_entry('gt tap guard pr-workflow 2>/dev/null || true', 'Bash(git checkout -b*)'),
+        hook_entry('gt tap guard pr-workflow 2>/dev/null || true', 'Bash(git switch -c*)')
     ],
-    'Stop': [{'command': 'gt costs record 2>/dev/null || true'}]
+    'Stop': [hook_entry('gt costs record 2>/dev/null || true')]
 }
 
+# Collect all existing commands per event to avoid duplicates
 existing_hooks = settings.get('hooks', {})
-for event, hooks in gastown_hooks.items():
+for event, new_entries in gastown_hooks.items():
     if event not in existing_hooks:
         existing_hooks[event] = []
-    existing_cmds = {h.get('command') for h in existing_hooks[event]}
-    for hook in hooks:
-        if hook['command'] not in existing_cmds:
-            existing_hooks[event].append(hook)
+    # Gather commands already present (check both flat and nested formats)
+    existing_cmds = set()
+    for entry in existing_hooks[event]:
+        if 'command' in entry:
+            existing_cmds.add(entry['command'])
+        for h in entry.get('hooks', []):
+            existing_cmds.add(h.get('command', ''))
+    for new_entry in new_entries:
+        cmd = new_entry['hooks'][0]['command']
+        if cmd not in existing_cmds:
+            existing_hooks[event].append(new_entry)
 
 settings['hooks'] = existing_hooks
 
