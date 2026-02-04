@@ -21,18 +21,11 @@ if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
   gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
 fi
 
-# Register current project as a rig under the HQ (idempotent).
-# Rig structure lives under $GASTOWN_HOME/<rig>/, keeping the project root clean.
-if [ -d .git ]; then
-  rig_name=$(basename "$PWD" | tr '-. ' '_')
-  project_dir="$PWD"
-  git_url=$(git remote get-url origin 2>/dev/null || true)
-  if [ -n "$git_url" ]; then
-    # Run from HQ context so the rig is created under $GASTOWN_HOME/
-    if ! (cd "$GASTOWN_HOME" && gt rig list 2>/dev/null) | grep -q "$rig_name"; then
-      (cd "$GASTOWN_HOME" && gt rig add "$rig_name" "$git_url" --local-repo "$project_dir") 2>/dev/null || true
-    fi
-  fi
+# Initialize project directory as a gastown rig (idempotent).
+# gt init creates agent directories (polecats/, crew/, etc.) and adds them
+# to .git/info/exclude so they don't appear in git status.
+if [ -d .git ] && [ ! -d polecats ]; then
+  gt init 2>/dev/null || true
 fi
 
 # Ensure gastown runtime files are in .gitignore
