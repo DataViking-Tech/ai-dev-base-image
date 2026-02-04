@@ -21,11 +21,16 @@ if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
   gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
 fi
 
-# Initialize project directory as a gastown rig (idempotent).
-# gt init creates agent directories (polecats/, crew/, etc.) and adds them
-# to .git/info/exclude so they don't appear in git status.
-if [ -d .git ] && [ ! -d polecats ]; then
-  gt init 2>/dev/null || true
+# Register project as a rig under the HQ (idempotent).
+# Rig infrastructure lives under $GASTOWN_HOME/<rig>/, keeping project root clean.
+if [ -d .git ]; then
+  rig_name=$(basename "$PWD" | tr '-. ' '_')
+  git_url=$(git remote get-url origin 2>/dev/null || true)
+  if [ -n "$git_url" ]; then
+    if ! (cd "$GASTOWN_HOME" && gt rig list 2>/dev/null) | grep -q "$rig_name"; then
+      (cd "$GASTOWN_HOME" && gt rig add "$rig_name" "$git_url" --local-repo "$PWD") 2>/dev/null || true
+    fi
+  fi
 fi
 
 # Ensure gastown runtime files are in .gitignore
@@ -40,18 +45,20 @@ done
 # Merge gastown hooks into Claude Code settings.json (idempotent)
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 
-# Check if gastown hooks are already merged (Stop hook command as sentinel)
+# Check if gastown hooks are already merged (any gt command in Stop as sentinel)
 if [ -f "$CLAUDE_SETTINGS" ] && python3 -c "
 import json, sys
 with open('$CLAUDE_SETTINGS') as f:
     data = json.load(f)
 hooks = data.get('hooks', {})
 stop_hooks = hooks.get('Stop', [])
-# Look for gt costs record in the correct nested format
 for entry in stop_hooks:
     for h in entry.get('hooks', []):
         if 'gt costs record' in h.get('command', ''):
             sys.exit(0)
+    # Also check flat format (legacy)
+    if 'gt costs record' in entry.get('command', ''):
+        sys.exit(0)
 sys.exit(1)
 " 2>/dev/null; then
   exit 0
@@ -77,16 +84,21 @@ def hook_entry(command, matcher=None):
         entry['matcher'] = matcher
     return entry
 
+# Wrap gt commands with cd to GASTOWN_HOME so they work from any cwd
+gt_home = '$GASTOWN_HOME'
+def gt_cmd(cmd):
+    return f'cd {gt_home} && {cmd}'
+
 gastown_hooks = {
-    'SessionStart': [hook_entry('gt prime --hook 2>/dev/null || true')],
-    'PreCompact': [hook_entry('gt prime --hook 2>/dev/null || true')],
-    'UserPromptSubmit': [hook_entry('gt mail check --inject 2>/dev/null || true')],
+    'SessionStart': [hook_entry(gt_cmd('gt prime --hook 2>/dev/null || true'))],
+    'PreCompact': [hook_entry(gt_cmd('gt prime --hook 2>/dev/null || true'))],
+    'UserPromptSubmit': [hook_entry(gt_cmd('gt mail check --inject 2>/dev/null || true'))],
     'PreToolUse': [
-        hook_entry('gt tap guard pr-workflow 2>/dev/null || true', 'Bash(gh pr create*)'),
-        hook_entry('gt tap guard pr-workflow 2>/dev/null || true', 'Bash(git checkout -b*)'),
-        hook_entry('gt tap guard pr-workflow 2>/dev/null || true', 'Bash(git switch -c*)')
+        hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(gh pr create*)'),
+        hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(git checkout -b*)'),
+        hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(git switch -c*)')
     ],
-    'Stop': [hook_entry('gt costs record 2>/dev/null || true')]
+    'Stop': [hook_entry(gt_cmd('gt costs record 2>/dev/null || true'))]
 }
 
 # Collect all existing commands per event to avoid duplicates
