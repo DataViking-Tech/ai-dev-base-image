@@ -18,11 +18,15 @@ install_pre_push_hook() {
 current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
 
 if [[ "$current_branch" == "main" ]]; then
+  # Derive worktree directory name from workspace folder name
+  workspace_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
+  worktrees_dir="../${workspace_name}-worktrees"
+
   echo ""
   echo "⚠️  WARNING: You're pushing directly to main from the main worktree"
   echo ""
   echo "Consider using a git worktree for isolated development:"
-  echo "  git worktree add ../frontline-forge-worktrees/feature/<branch> -b feature/<branch>"
+  echo "  git worktree add ${worktrees_dir}/feature/<branch> -b feature/<branch>"
   echo ""
   echo "Benefits of worktrees:"
   echo "  - Physical isolation (separate directory per branch)"
