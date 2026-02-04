@@ -85,7 +85,8 @@ COPY lib/dev-infra/secrets /opt/dev-infra/secrets
 COPY lib/dev-infra/setup /opt/dev-infra/setup
 RUN chmod +x /opt/dev-infra/*.sh /opt/dev-infra/setup/*.sh \
     && chmod +x /opt/ai-coding-utils/beads/setup/ensure_beads.sh \
-    && chmod +x /opt/dev-infra/setup/ensure_gastown.sh
+    && chmod +x /opt/dev-infra/setup/ensure_gastown.sh \
+    && chmod +x /opt/dev-infra/setup/start_gastown_services.sh
 
 # Copy utility documentation into the image for downstream layering
 COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md
@@ -138,7 +139,8 @@ LABEL devcontainer.metadata='[{ \
       } \
     } \
   }, \
-  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh" \
+  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh", \
+  "postStartCommand": "/opt/dev-infra/setup/start_gastown_services.sh" \
 }]'
 
 # Set working directory
