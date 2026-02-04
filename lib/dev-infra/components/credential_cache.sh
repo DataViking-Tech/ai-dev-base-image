@@ -5,7 +5,7 @@
 #   source devcontainer/components/credential_cache.sh
 #   setup_credential_cache "github" "cloudflare"
 #
-# Supported services: github, cloudflare
+# Supported services: github, cloudflare, claude
 #
 # Each service follows three-tier authentication:
 #   1. Check for cached credentials (bind-mounted directory)
@@ -104,6 +104,33 @@ setup_github_auth() {
   echo "Your credentials will be cached across container rebuilds."
   echo ""
 
+  return 0
+}
+
+# Claude Code authentication
+# Checks for cached credentials or ANTHROPIC_API_KEY
+setup_claude_auth() {
+  local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "⚠ Claude CLI not installed, skipping Claude auth"
+    return 1
+  fi
+
+  if [ -f "$CLAUDE_CREDS" ]; then
+    echo "✓ Claude Code authenticated"
+    return 0
+  fi
+
+  if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "✓ Claude Code: ANTHROPIC_API_KEY detected"
+    return 0
+  fi
+
+  echo ""
+  echo "⚠ Claude Code not authenticated. Please run:"
+  echo "  claude login"
+  echo ""
   return 0
 }
 

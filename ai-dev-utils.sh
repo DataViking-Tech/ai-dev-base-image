@@ -16,36 +16,9 @@ if [ -d "/opt/dev-infra" ]; then
     _ai_dev_old_opts=$(set +o)
     _ai_dev_old_shopt=$(shopt -p 2>/dev/null || true)
 
-    # Credential caching framework
+    # Credential caching framework (github, cloudflare, claude auth)
     if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
         source "/opt/dev-infra/credential_cache.sh" 2>/dev/null || true
-
-        # Claude Code credential check
-        # Credentials persist via Docker volume mount at ~/.claude (see Dockerfile)
-        setup_claude_auth() {
-          local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
-
-          if ! command -v claude >/dev/null 2>&1; then
-            echo "⚠ Claude CLI not installed, skipping Claude auth"
-            return 1
-          fi
-
-          if [ -f "$CLAUDE_CREDS" ]; then
-            echo "✓ Claude Code authenticated"
-            return 0
-          fi
-
-          if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "✓ Claude Code: ANTHROPIC_API_KEY detected"
-            return 0
-          fi
-
-          echo ""
-          echo "⚠ Claude Code not authenticated. Please run:"
-          echo "  claude login"
-          echo ""
-          return 0
-        }
 
         # Run the 3-tier auth setup for GitHub and Claude
         setup_credential_cache "github" "claude" || true

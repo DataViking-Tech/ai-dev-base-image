@@ -168,6 +168,56 @@ else
   echo "  Exit code: $EXIT_CODE (expected 0)"
 fi
 
+# Test 10: setup_claude_auth function exists and is callable
+echo ""
+echo "Test 10: setup_claude_auth function exists"
+if declare -f setup_claude_auth >/dev/null 2>&1; then
+  assert_success "setup_claude_auth function is defined"
+else
+  echo "✗ FAIL: setup_claude_auth function should be defined"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+
+# Test 11: setup_credential_cache invokes claude auth
+echo ""
+echo "Test 11: setup_credential_cache invokes claude service"
+OUTPUT=$(setup_credential_cache "claude" 2>&1)
+EXIT_CODE=$?
+if [ $EXIT_CODE -eq 0 ]; then
+  assert_success "setup_credential_cache handles claude service"
+else
+  echo "✗ FAIL: setup_credential_cache should handle claude service"
+  echo "  Exit code: $EXIT_CODE"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+
+# Test 12: setup_claude_auth returns 0 (non-blocking)
+echo ""
+echo "Test 12: setup_claude_auth returns 0 (non-blocking)"
+setup_claude_auth >/dev/null 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -eq 0 ]; then
+  assert_success "setup_claude_auth returns 0"
+else
+  echo "✗ FAIL: setup_claude_auth should return 0"
+  echo "  Exit code: $EXIT_CODE"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+
+# Test 13: setup_claude_auth with ANTHROPIC_API_KEY (no cached creds)
+echo ""
+echo "Test 13: setup_claude_auth with ANTHROPIC_API_KEY"
+FAKE_HOME=$(mktemp -d)
+ANTHROPIC_API_KEY="test-key" HOME="$FAKE_HOME" OUTPUT=$(setup_claude_auth 2>&1)
+if echo "$OUTPUT" | grep -q "ANTHROPIC_API_KEY detected"; then
+  assert_success "setup_claude_auth detects ANTHROPIC_API_KEY"
+else
+  echo "✗ FAIL: setup_claude_auth should detect ANTHROPIC_API_KEY"
+  echo "  Output: $OUTPUT"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+rm -rf "$FAKE_HOME"
+
 # Cleanup
 rm -rf "$AUTH_DIR"
 

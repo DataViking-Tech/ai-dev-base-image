@@ -5,6 +5,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENSURE_GASTOWN="$SCRIPT_DIR/../setup/ensure_gastown.sh"
+START_GASTOWN="$SCRIPT_DIR/../setup/start_gastown_services.sh"
 
 TESTS_RUN=0
 TESTS_PASSED=0
@@ -463,6 +464,59 @@ else
   TESTS_RUN=$((TESTS_RUN + 1))
   echo "⊘ SKIP: Test 10 (gt CLI not installed)"
 fi
+
+# -----------------------------------------------------------
+# Test 11: start_gastown_services.sh runs credential cache setup
+# -----------------------------------------------------------
+echo ""
+echo "Test 11: start_gastown_services.sh sources credential_cache.sh"
+WORK_DIR=$(mktemp -d)
+# Create a mock /opt/dev-infra/credential_cache.sh
+FAKE_OPT=$(mktemp -d)
+mkdir -p "$FAKE_OPT/dev-infra/setup"
+# Create a credential_cache.sh that records what services are set up
+cat > "$FAKE_OPT/dev-infra/credential_cache.sh" << 'MOCKEOF'
+setup_credential_cache() {
+  echo "CRED_SERVICES_CALLED: $*"
+  return 0
+}
+MOCKEOF
+# Copy start_gastown_services.sh to use our mock path
+sed "s|/opt/dev-infra|$FAKE_OPT/dev-infra|g" "$START_GASTOWN" > "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
+chmod +x "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
+# Run without gt available (to skip gastown services, just test cred setup)
+OUTPUT=$(PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
+if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github claude"; then
+  assert_success "start_gastown_services.sh runs credential setup with defaults"
+else
+  assert_failure "start_gastown_services.sh runs credential setup with defaults" \
+    "Output: $OUTPUT"
+fi
+rm -rf "$WORK_DIR" "$FAKE_OPT"
+
+# -----------------------------------------------------------
+# Test 12: CREDENTIAL_SERVICES env var overrides defaults
+# -----------------------------------------------------------
+echo ""
+echo "Test 12: CREDENTIAL_SERVICES env var overrides defaults"
+FAKE_OPT=$(mktemp -d)
+mkdir -p "$FAKE_OPT/dev-infra/setup"
+cat > "$FAKE_OPT/dev-infra/credential_cache.sh" << 'MOCKEOF'
+setup_credential_cache() {
+  echo "CRED_SERVICES_CALLED: $*"
+  return 0
+}
+MOCKEOF
+sed "s|/opt/dev-infra|$FAKE_OPT/dev-infra|g" "$START_GASTOWN" > "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
+chmod +x "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
+OUTPUT=$(CREDENTIAL_SERVICES="github cloudflare" PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
+if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github cloudflare"; then
+  assert_success "CREDENTIAL_SERVICES env var overrides default services"
+else
+  assert_failure "CREDENTIAL_SERVICES env var overrides default services" \
+    "Output: $OUTPUT"
+fi
+rm -rf "$FAKE_OPT"
 
 # Summary
 echo ""
