@@ -9,18 +9,10 @@ Reference configurations showing how to integrate the credential cache component
 
 ## Usage
 
-1. Add dev-infra as a git submodule (if not already present):
-   ```bash
-   git submodule add https://github.com/DataViking-Tech/dev-infra.git tooling/dev-infra
-   ```
+dev-infra components are pre-installed at `/opt/dev-infra/` in the base image.
 
-2. Copy example files to your project's `.devcontainer/` directory:
-   ```bash
-   cp devcontainer/components/examples/* .devcontainer/
-   ```
+1. Copy example files to your project's `.devcontainer/` directory and adapt for your project.
 
-3. Adapt the files for your project (change name, add features, etc.)
-
-4. Add `temp/` to your `.gitignore` (REQUIRED)
+2. Add `temp/` to your `.gitignore` (REQUIRED)
 
 See [../README.md](../README.md) for complete documentation.

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Ensure beads is initialized in the current workspace.
+# Called from devcontainer postCreateCommand (via image LABEL).
+# Idempotent: skips if .beads/ already exists or bd is not installed.
+set -euo pipefail
+
+if ! command -v bd >/dev/null 2>&1; then
+  exit 0
+fi
+
+if [ -d .beads ]; then
+  exit 0
+fi
+
+prefix=$(basename "$PWD")
+bd init --prefix "$prefix" --skip-hooks -q 2>/dev/null || true
+
+# Ensure .beads/ is in .gitignore
+if [ -d .beads ]; then
+  if [ ! -f .gitignore ]; then
+    echo ".beads/" > .gitignore
+  elif ! grep -qx '.beads/' .gitignore 2>/dev/null; then
+    echo ".beads/" >> .gitignore
+  fi
+fi

@@ -26,8 +26,7 @@ In `.devcontainer/postStartCommand.sh`:
 
 ```bash
 #!/bin/bash
-# Run from project root
-source tooling/dev-infra/devcontainer/components/credential_cache.sh
+source /opt/dev-infra/credential_cache.sh
 setup_credential_cache "github" "cloudflare"
 ```
 

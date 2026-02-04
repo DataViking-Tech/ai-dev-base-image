@@ -51,75 +51,10 @@ if [ -d "/opt/dev-infra" ]; then
         setup_credential_cache "github" "claude" || true
     fi
 
-    # Gastown multi-agent orchestration setup
-    setup_gastown() {
-        if ! command -v gt >/dev/null 2>&1; then
-            return 0
-        fi
-
+    # Gastown environment (init handled by ensure_gastown.sh at container create)
+    if command -v gt >/dev/null 2>&1; then
         export GASTOWN_HOME="${GASTOWN_HOME:-$HOME/gt}"
-
-        # Fix ownership if the directory was created by a Docker volume mount (root-owned)
-        if [ -d "$GASTOWN_HOME" ] && [ "$(stat -c '%u' "$GASTOWN_HOME" 2>/dev/null)" != "$(id -u)" ]; then
-            sudo chown -R "$(id -u):$(id -g)" "$GASTOWN_HOME" 2>/dev/null || true
-        fi
-
-        # Initialize workspace if not already present
-        if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
-            gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
-        fi
-
-        # Merge gastown hooks into Claude Code settings.json
-        local CLAUDE_SETTINGS="$HOME/.claude/settings.json"
-        if [ ! -f "$CLAUDE_SETTINGS" ] || ! python3 -c "
-import json, sys
-with open('$CLAUDE_SETTINGS') as f:
-    data = json.load(f)
-sys.exit(0 if 'hooks' in data and 'Stop' in data['hooks'] else 1)
-" 2>/dev/null; then
-            mkdir -p "$HOME/.claude"
-            python3 -c "
-import json, os
-
-settings_path = '$CLAUDE_SETTINGS'
-
-# Load existing settings or start fresh
-if os.path.exists(settings_path):
-    with open(settings_path) as f:
-        settings = json.load(f)
-else:
-    settings = {}
-
-gastown_hooks = {
-    'SessionStart': [{'command': 'gt prime --hook 2>/dev/null || true'}],
-    'PreCompact': [{'command': 'gt prime --hook 2>/dev/null || true'}],
-    'UserPromptSubmit': [{'command': 'gt mail check --inject 2>/dev/null || true'}],
-    'PreToolUse': [
-        {'matcher': 'Bash(gh pr create*)', 'command': 'gt tap guard pr-workflow 2>/dev/null || true'},
-        {'matcher': 'Bash(git checkout -b*)', 'command': 'gt tap guard pr-workflow 2>/dev/null || true'},
-        {'matcher': 'Bash(git switch -c*)', 'command': 'gt tap guard pr-workflow 2>/dev/null || true'}
-    ],
-    'Stop': [{'command': 'gt costs record 2>/dev/null || true'}]
-}
-
-# Merge hooks: append gastown hooks to any existing hooks per event
-existing_hooks = settings.get('hooks', {})
-for event, hooks in gastown_hooks.items():
-    if event not in existing_hooks:
-        existing_hooks[event] = []
-    existing_cmds = {h.get('command') for h in existing_hooks[event]}
-    for hook in hooks:
-        if hook['command'] not in existing_cmds:
-            existing_hooks[event].append(hook)
-
-settings['hooks'] = existing_hooks
-
-with open(settings_path, 'w') as f:
-    json.dump(settings, f, indent=2)
-" 2>/dev/null || true
-        fi
-    }
-    setup_gastown
+    fi
 
     # Directory creation component
     if [ -f "/opt/dev-infra/directories.sh" ]; then

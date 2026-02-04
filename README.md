@@ -28,10 +28,10 @@ Foundation Docker image for AI coding workflows with embedded utilities.
 ## Component Versions
 
 This image includes:
-- ai-coding-utils: v1.0.5
-- dev-infra: v1.0.4
 - Claude CLI: latest
 - Beads: 0.49.2
+- ai-coding-utils (embedded from `lib/ai-coding-utils/`)
+- dev-infra (embedded from `lib/dev-infra/`)
 
 ## Building Locally
 

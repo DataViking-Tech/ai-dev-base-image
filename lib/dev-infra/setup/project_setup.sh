@@ -25,4 +25,5 @@ dev_infra_project_setup() {
   ensure_worktrees_dir "$worktree_dir"
   install_pre_push_hook "$workspace_root"
   configure_shell_aliases "${workspace_root}/temp/python_virtual_env"
+  (cd "$workspace_root" && /opt/ai-coding-utils/beads/setup/ensure_beads.sh) || true
 }
