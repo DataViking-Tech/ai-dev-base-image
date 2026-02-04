@@ -24,7 +24,7 @@ fi
 # Register project as a rig under the HQ (idempotent).
 # Rig infrastructure lives under $GASTOWN_HOME/<rig>/, keeping project root clean.
 if [ -d .git ]; then
-  rig_name=$(basename "$PWD" | tr '-. ' '_')
+  rig_name=$(basename "$PWD" | tr -- '-. ' '_')
   git_url=$(git remote get-url origin 2>/dev/null || true)
   if [ -n "$git_url" ]; then
     if ! (cd "$GASTOWN_HOME" && gt rig list 2>/dev/null) | grep -q "$rig_name"; then
