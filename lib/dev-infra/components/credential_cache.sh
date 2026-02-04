@@ -56,6 +56,12 @@ setup_credential_cache() {
 setup_github_auth() {
   export GH_CONFIG_DIR="$AUTH_DIR/gh-config"
   local HOSTS_FILE="$GH_CONFIG_DIR/hosts.yml"
+  local SENTINEL_FILE="$AUTH_DIR/.gh-auth-checked"
+
+  # Sentinel: skip full check if already verified this container boot
+  if [ -f "$SENTINEL_FILE" ]; then
+    return 0
+  fi
 
   # Ensure gh CLI is installed
   if ! command -v gh >/dev/null 2>&1; then
@@ -81,6 +87,7 @@ setup_github_auth() {
   # Tier 1: Check for cached credentials
   if [ -f "$HOSTS_FILE" ]; then
     echo "✓ GitHub CLI authenticated (cached)"
+    touch "$SENTINEL_FILE"
     return 0
   fi
 
@@ -89,6 +96,7 @@ setup_github_auth() {
     echo "Converting GITHUB_TOKEN to cached OAuth credentials..."
     if echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; then
       echo "✓ GitHub CLI authenticated automatically via GITHUB_TOKEN"
+      touch "$SENTINEL_FILE"
       return 0
     else
       echo "⚠ Failed to authenticate with GITHUB_TOKEN"
@@ -96,13 +104,26 @@ setup_github_auth() {
     fi
   fi
 
-  # Tier 3: Interactive fallback
-  echo ""
-  echo "⚠ GitHub CLI not authenticated. Please run:"
-  echo "  gh auth login"
-  echo ""
-  echo "Your credentials will be cached across container rebuilds."
-  echo ""
+  # Tier 2.5: Check if gh is authenticated via other mechanisms
+  # (credential helpers, codespace token forwarding, keyring, etc.)
+  if gh auth status >/dev/null 2>&1; then
+    echo "✓ GitHub CLI authenticated"
+    touch "$SENTINEL_FILE"
+    return 0
+  fi
+
+  # Tier 3: Interactive fallback - only warn in interactive terminals
+  if [ -t 1 ]; then
+    echo ""
+    echo "⚠ GitHub CLI not authenticated. Please run:"
+    echo "  gh auth login"
+    echo ""
+    echo "Your credentials will be cached across container rebuilds."
+    echo ""
+  fi
+
+  # Write sentinel even for unauthenticated state to avoid repeated warnings
+  touch "$SENTINEL_FILE"
 
   return 0
 }
