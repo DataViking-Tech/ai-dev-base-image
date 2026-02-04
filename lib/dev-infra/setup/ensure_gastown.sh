@@ -16,9 +16,14 @@ if [ -d "$GASTOWN_HOME" ] && [ "$(stat -c '%u' "$GASTOWN_HOME" 2>/dev/null)" != 
   sudo chown -R "$(id -u):$(id -g)" "$GASTOWN_HOME" 2>/dev/null || true
 fi
 
-# Initialize workspace if not already present
+# Initialize HQ workspace if not already present
 if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
   gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
+fi
+
+# Initialize current project directory as a rig (idempotent)
+if [ -d .git ] && [ ! -d polecats ]; then
+  gt init 2>/dev/null || true
 fi
 
 # Merge gastown hooks into Claude Code settings.json (idempotent)
