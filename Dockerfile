@@ -121,8 +121,8 @@ LABEL devcontainer.metadata='[{ \
   }, \
   "mounts": [ \
 	"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind", \
-    "source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume", \
-    "source=gastown-data-${devcontainerId},target=/home/vscode/gt,type=volume" \
+    "source=claude-code-config-${localWorkspaceFolderBasename},target=/home/vscode/.claude,type=volume", \
+    "source=gastown-data-${localWorkspaceFolderBasename},target=/home/vscode/gt,type=volume" \
   ], \
   "customizations": { \
     "vscode": { \
