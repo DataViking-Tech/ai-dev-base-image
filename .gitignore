@@ -18,3 +18,9 @@ temp/
 
 # Generated at container creation (copied from image)
 .devcontainer/UTILITIES.md
+
+# Gas Town (added by gt)
+.runtime/
+.claude/
+.beads/
+.logs/
