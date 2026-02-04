@@ -21,19 +21,16 @@ if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
   gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
 fi
 
-# Initialize current project directory as a rig (idempotent)
-if [ -d .git ] && [ ! -d polecats ]; then
-  gt init 2>/dev/null || true
-fi
-
-# Register rig with the town (idempotent)
-if [ -d .git ] && [ -d polecats ]; then
-  # Rig names can't contain hyphens/dots/spaces — replace with underscores
+# Register current project as a rig under the HQ (idempotent).
+# Rig structure lives under $GASTOWN_HOME/<rig>/, keeping the project root clean.
+if [ -d .git ]; then
   rig_name=$(basename "$PWD" | tr '-. ' '_')
+  project_dir="$PWD"
   git_url=$(git remote get-url origin 2>/dev/null || true)
   if [ -n "$git_url" ]; then
-    if ! gt rig list 2>/dev/null | grep -q "$rig_name"; then
-      gt rig add "$rig_name" "$git_url" --local-repo "$PWD" 2>/dev/null || true
+    # Run from HQ context so the rig is created under $GASTOWN_HOME/
+    if ! (cd "$GASTOWN_HOME" && gt rig list 2>/dev/null) | grep -q "$rig_name"; then
+      (cd "$GASTOWN_HOME" && gt rig add "$rig_name" "$git_url" --local-repo "$project_dir") 2>/dev/null || true
     fi
   fi
 fi
