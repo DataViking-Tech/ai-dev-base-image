@@ -112,18 +112,20 @@ setup_github_auth() {
 setup_claude_auth() {
   local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
 
-  if ! command -v claude >/dev/null 2>&1; then
-    echo "⚠ Claude CLI not installed, skipping Claude auth"
-    return 1
-  fi
-
+  # Check cached credentials first (works regardless of CLI)
   if [ -f "$CLAUDE_CREDS" ]; then
     echo "✓ Claude Code authenticated"
     return 0
   fi
 
+  # API key is sufficient without CLI installed
   if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
     echo "✓ Claude Code: ANTHROPIC_API_KEY detected"
+    return 0
+  fi
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "⚠ Claude CLI not installed, skipping Claude auth"
     return 0
   fi
 
