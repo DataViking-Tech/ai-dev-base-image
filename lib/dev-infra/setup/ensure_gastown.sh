@@ -26,12 +26,14 @@ if [ -d .git ] && [ ! -d polecats ]; then
   gt init 2>/dev/null || true
 fi
 
-# Ensure .events.jsonl is in .gitignore (gastown event log)
-if [ -f .gitignore ]; then
-  grep -qx '.events.jsonl' .gitignore 2>/dev/null || echo ".events.jsonl" >> .gitignore
-elif [ -d .git ]; then
-  echo ".events.jsonl" > .gitignore
-fi
+# Ensure gastown runtime files are in .gitignore
+for entry in .events.jsonl .runtime/; do
+  if [ -f .gitignore ]; then
+    grep -qx "$entry" .gitignore 2>/dev/null || echo "$entry" >> .gitignore
+  elif [ -d .git ]; then
+    echo "$entry" > .gitignore
+  fi
+done
 
 # Merge gastown hooks into Claude Code settings.json (idempotent)
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
