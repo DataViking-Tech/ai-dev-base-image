@@ -4,16 +4,20 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 ARG BEADS_VERSION=0.49.3
 ARG GASTOWN_VERSION=0.5.0
 
-# Install system dependencies
+# Install system dependencies (excluding nodejs - installed separately below)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
     build-essential \
-    nodejs \
     tmux \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 LTS via NodeSource (wrangler requires Node 20+)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
 RUN (type -p wget >/dev/null || (apt-get update && apt-get install -y wget)) && \
@@ -60,6 +64,9 @@ RUN ln -sf /home/vscode/.local/bin/claude /usr/local/bin/claude
 
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex
+
+# Install Wrangler (Cloudflare CLI) globally
+RUN bun install -g wrangler
 
 # Embed ai-coding-utils (slack notifications + beads hooks)
 COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
