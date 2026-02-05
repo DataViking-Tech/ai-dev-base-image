@@ -18,6 +18,8 @@ if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
   IFS=' ' read -ra _services <<< "${CREDENTIAL_CACHE_SERVICES:-github claude}"
   setup_credential_cache "${_services[@]}" || true
   unset _services
+  # Verify credentials propagated correctly; re-import from shared if needed
+  verify_credential_propagation || true
 fi
 
 # --- Gastown services ---
