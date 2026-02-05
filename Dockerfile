@@ -79,6 +79,9 @@ RUN uv pip install --system --break-system-packages --python 3.11 \
 # Add ai-coding-utils to PYTHONPATH
 ENV PYTHONPATH="/opt/ai-coding-utils"
 
+# Embed Claude agent configurations for downstream projects
+COPY lib/agent-configs/claude-agents/ /opt/agent-configs/claude-agents/
+
 # Embed dev-infra (devcontainer components, secrets manager, project setup)
 COPY lib/dev-infra/components/ /opt/dev-infra/
 COPY lib/dev-infra/secrets /opt/dev-infra/secrets
