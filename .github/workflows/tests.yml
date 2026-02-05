@@ -41,3 +41,6 @@ jobs:
 
       - name: Run credential cache tests
         run: bash lib/dev-infra/tests/test_credential_cache_core.sh
+
+      - name: Run directories tests
+        run: bash lib/dev-infra/tests/test_directories.sh
