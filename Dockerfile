@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
 # Build arguments for external binary versions
-ARG BEADS_VERSION=0.49.2
+ARG BEADS_VERSION=0.49.3
 ARG GASTOWN_VERSION=0.5.0
 
 # Install system dependencies
