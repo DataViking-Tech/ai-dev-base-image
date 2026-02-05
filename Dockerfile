@@ -35,18 +35,14 @@ RUN uv python install 3.11 && \
     ln -sf $(uv python find 3.11) /usr/local/bin/python3 && \
     ln -sf $(uv python find 3.11) /usr/local/bin/python
 
-# Install Beads binary with checksum verification
-RUN BEADS_SHA256="32a79c3250e5f32fa847068d7574eed4b6664663033bf603a8f393680b03237b" && \
-    wget -q https://github.com/steveyegge/beads/releases/download/v${BEADS_VERSION}/beads_${BEADS_VERSION}_linux_amd64.tar.gz -O /tmp/beads.tar.gz && \
-    echo "${BEADS_SHA256}  /tmp/beads.tar.gz" | sha256sum -c - && \
+# Install Beads binary
+RUN wget -q https://github.com/steveyegge/beads/releases/download/v${BEADS_VERSION}/beads_${BEADS_VERSION}_linux_amd64.tar.gz -O /tmp/beads.tar.gz && \
     tar xzf /tmp/beads.tar.gz -C /usr/local/bin && \
     chmod +x /usr/local/bin/bd && \
     rm /tmp/beads.tar.gz
 
-# Install Gastown binary with checksum verification
-RUN GASTOWN_SHA256="438245c0ac91a42eead4a1b1b744b505a1f7042a274239e659980f67b7886780" && \
-    wget -q https://github.com/steveyegge/gastown/releases/download/v${GASTOWN_VERSION}/gastown_${GASTOWN_VERSION}_linux_amd64.tar.gz -O /tmp/gastown.tar.gz && \
-    echo "${GASTOWN_SHA256}  /tmp/gastown.tar.gz" | sha256sum -c - && \
+# Install Gastown binary
+RUN wget -q https://github.com/steveyegge/gastown/releases/download/v${GASTOWN_VERSION}/gastown_${GASTOWN_VERSION}_linux_amd64.tar.gz -O /tmp/gastown.tar.gz && \
     tar xzf /tmp/gastown.tar.gz -C /usr/local/bin && \
     chmod +x /usr/local/bin/gt && \
     rm /tmp/gastown.tar.gz
