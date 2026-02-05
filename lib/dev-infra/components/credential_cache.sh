@@ -57,6 +57,7 @@ setup_github_auth() {
   export GH_CONFIG_DIR="$AUTH_DIR/gh-config"
   local HOSTS_FILE="$GH_CONFIG_DIR/hosts.yml"
   local SENTINEL_FILE="$AUTH_DIR/.gh-auth-checked"
+  local SHARED_GH_DIR="/home/vscode/.shared-auth/gh"
 
   # Sentinel: skip full check if already verified this container boot
   if [ -f "$SENTINEL_FILE" ]; then
@@ -73,6 +74,15 @@ setup_github_auth() {
   mkdir -p "$GH_CONFIG_DIR"
   chmod 700 "$GH_CONFIG_DIR"
 
+  # Shared auth volume: import credentials from shared volume
+  if [ -d "$SHARED_GH_DIR" ] && [ -f "$SHARED_GH_DIR/hosts.yml" ] && [ ! -f "$HOSTS_FILE" ]; then
+    cp "$SHARED_GH_DIR/hosts.yml" "$HOSTS_FILE"
+    chmod 600 "$HOSTS_FILE"
+    if [ -f "$SHARED_GH_DIR/config.yml" ] && [ ! -f "$GH_CONFIG_DIR/config.yml" ]; then
+      cp "$SHARED_GH_DIR/config.yml" "$GH_CONFIG_DIR/config.yml"
+    fi
+  fi
+
   # Migrate: if credentials exist in default location but not in cache, copy them
   local DEFAULT_HOSTS="$HOME/.config/gh/hosts.yml"
   if [ ! -f "$HOSTS_FILE" ] && [ -f "$DEFAULT_HOSTS" ]; then
@@ -87,6 +97,12 @@ setup_github_auth() {
   # Tier 1: Check for cached credentials
   if [ -f "$HOSTS_FILE" ]; then
     echo "✓ GitHub CLI authenticated (cached)"
+    # Shared auth volume: propagate to shared for other containers
+    if [ -d "$SHARED_GH_DIR" ] && [ ! -f "$SHARED_GH_DIR/hosts.yml" ]; then
+      cp "$HOSTS_FILE" "$SHARED_GH_DIR/hosts.yml"
+      chmod 600 "$SHARED_GH_DIR/hosts.yml"
+      [ -f "$GH_CONFIG_DIR/config.yml" ] && cp "$GH_CONFIG_DIR/config.yml" "$SHARED_GH_DIR/config.yml" 2>/dev/null || true
+    fi
     touch "$SENTINEL_FILE"
     return 0
   fi
@@ -96,6 +112,12 @@ setup_github_auth() {
     echo "Converting GITHUB_TOKEN to cached OAuth credentials..."
     if echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; then
       echo "✓ GitHub CLI authenticated automatically via GITHUB_TOKEN"
+      # Shared auth volume: propagate to shared for other containers
+      if [ -d "$SHARED_GH_DIR" ] && [ -f "$HOSTS_FILE" ] && [ ! -f "$SHARED_GH_DIR/hosts.yml" ]; then
+        cp "$HOSTS_FILE" "$SHARED_GH_DIR/hosts.yml"
+        chmod 600 "$SHARED_GH_DIR/hosts.yml"
+        [ -f "$GH_CONFIG_DIR/config.yml" ] && cp "$GH_CONFIG_DIR/config.yml" "$SHARED_GH_DIR/config.yml" 2>/dev/null || true
+      fi
       touch "$SENTINEL_FILE"
       return 0
     else
@@ -128,9 +150,38 @@ setup_github_auth() {
   return 0
 }
 
+# Claude shared auth volume sync
+# Syncs ONLY .credentials.json between local and shared volume.
+# NEVER syncs projects/, history.jsonl, or other per-project data.
+setup_claude_shared_auth() {
+  local SHARED_CLAUDE_DIR="/home/vscode/.shared-auth/claude"
+  local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
+
+  # Skip if shared volume not mounted
+  [ -d "$SHARED_CLAUDE_DIR" ] || return 0
+
+  # Import: shared → local (pick up auth from another container)
+  if [ -f "$SHARED_CLAUDE_DIR/.credentials.json" ] && [ ! -f "$CLAUDE_CREDS" ]; then
+    mkdir -p "$HOME/.claude"
+    cp "$SHARED_CLAUDE_DIR/.credentials.json" "$CLAUDE_CREDS"
+    chmod 600 "$CLAUDE_CREDS"
+  fi
+
+  # Export: local → shared (first-auth propagation)
+  if [ -f "$CLAUDE_CREDS" ] && [ ! -f "$SHARED_CLAUDE_DIR/.credentials.json" ]; then
+    cp "$CLAUDE_CREDS" "$SHARED_CLAUDE_DIR/.credentials.json"
+    chmod 600 "$SHARED_CLAUDE_DIR/.credentials.json"
+  fi
+
+  return 0
+}
+
 # Claude Code authentication
 # Checks for cached credentials or ANTHROPIC_API_KEY
 setup_claude_auth() {
+  # Sync with shared auth volume before checking local credentials
+  setup_claude_shared_auth
+
   local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
 
   # Check cached credentials first (works regardless of CLI)

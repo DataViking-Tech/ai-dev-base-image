@@ -125,7 +125,9 @@ LABEL devcontainer.metadata='[{ \
   "mounts": [ \
 	"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind", \
     "source=claude-code-config-${localWorkspaceFolderBasename},target=/home/vscode/.claude,type=volume", \
-    "source=gastown-data-${localWorkspaceFolderBasename},target=/home/vscode/gt,type=volume" \
+    "source=gastown-data-${localWorkspaceFolderBasename},target=/home/vscode/gt,type=volume", \
+    "source=shared-gh-auth,target=/home/vscode/.shared-auth/gh,type=volume", \
+    "source=shared-claude-auth,target=/home/vscode/.shared-auth/claude,type=volume" \
   ], \
   "customizations": { \
     "vscode": { \

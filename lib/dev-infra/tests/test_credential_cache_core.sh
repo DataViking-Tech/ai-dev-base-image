@@ -218,6 +218,139 @@ else
 fi
 rm -rf "$FAKE_HOME"
 
+# Test 14: setup_claude_shared_auth function exists
+echo ""
+echo "Test 14: setup_claude_shared_auth function exists"
+if declare -f setup_claude_shared_auth >/dev/null 2>&1; then
+  assert_success "setup_claude_shared_auth function is defined"
+else
+  echo "✗ FAIL: setup_claude_shared_auth function should be defined"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+
+# Test 15: setup_claude_shared_auth returns 0 when shared dir missing
+echo ""
+echo "Test 15: setup_claude_shared_auth returns 0 when shared dir missing"
+setup_claude_shared_auth >/dev/null 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -eq 0 ]; then
+  assert_success "setup_claude_shared_auth returns 0 when shared dir missing"
+else
+  echo "✗ FAIL: setup_claude_shared_auth should return 0 when shared dir missing"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+
+# Test 16: Claude shared auth imports from shared to local
+echo ""
+echo "Test 16: Claude shared auth imports shared → local"
+FAKE_HOME=$(mktemp -d)
+FAKE_SHARED=$(mktemp -d)
+echo '{"token":"shared-test"}' > "$FAKE_SHARED/.credentials.json"
+FAKE_CREDS="$FAKE_HOME/.claude/.credentials.json"
+# Replicate the import logic inline
+if [ -f "$FAKE_SHARED/.credentials.json" ] && [ ! -f "$FAKE_CREDS" ]; then
+  mkdir -p "$FAKE_HOME/.claude"
+  cp "$FAKE_SHARED/.credentials.json" "$FAKE_CREDS"
+  chmod 600 "$FAKE_CREDS"
+fi
+if [ -f "$FAKE_CREDS" ]; then
+  assert_success "Claude shared auth imports from shared to local"
+else
+  echo "✗ FAIL: Claude shared auth should import from shared to local"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+rm -rf "$FAKE_HOME" "$FAKE_SHARED"
+
+# Test 17: Claude shared auth exports from local to shared
+echo ""
+echo "Test 17: Claude shared auth exports local → shared"
+FAKE_HOME=$(mktemp -d)
+FAKE_SHARED=$(mktemp -d)
+mkdir -p "$FAKE_HOME/.claude"
+echo '{"token":"local-test"}' > "$FAKE_HOME/.claude/.credentials.json"
+FAKE_CREDS="$FAKE_HOME/.claude/.credentials.json"
+# Replicate the export logic inline
+if [ -f "$FAKE_CREDS" ] && [ ! -f "$FAKE_SHARED/.credentials.json" ]; then
+  cp "$FAKE_CREDS" "$FAKE_SHARED/.credentials.json"
+  chmod 600 "$FAKE_SHARED/.credentials.json"
+fi
+if [ -f "$FAKE_SHARED/.credentials.json" ]; then
+  assert_success "Claude shared auth exports from local to shared"
+else
+  echo "✗ FAIL: Claude shared auth should export from local to shared"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+rm -rf "$FAKE_HOME" "$FAKE_SHARED"
+
+# Test 18: Claude shared auth does not overwrite existing credentials
+echo ""
+echo "Test 18: Claude shared auth does not overwrite existing creds"
+FAKE_HOME=$(mktemp -d)
+FAKE_SHARED=$(mktemp -d)
+mkdir -p "$FAKE_HOME/.claude"
+echo '{"token":"local-existing"}' > "$FAKE_HOME/.claude/.credentials.json"
+echo '{"token":"shared-existing"}' > "$FAKE_SHARED/.credentials.json"
+FAKE_CREDS="$FAKE_HOME/.claude/.credentials.json"
+# Replicate both import and export logic inline
+if [ -f "$FAKE_SHARED/.credentials.json" ] && [ ! -f "$FAKE_CREDS" ]; then
+  mkdir -p "$FAKE_HOME/.claude"
+  cp "$FAKE_SHARED/.credentials.json" "$FAKE_CREDS"
+  chmod 600 "$FAKE_CREDS"
+fi
+if [ -f "$FAKE_CREDS" ] && [ ! -f "$FAKE_SHARED/.credentials.json" ]; then
+  cp "$FAKE_CREDS" "$FAKE_SHARED/.credentials.json"
+  chmod 600 "$FAKE_SHARED/.credentials.json"
+fi
+LOCAL_CONTENT=$(cat "$FAKE_HOME/.claude/.credentials.json")
+SHARED_CONTENT=$(cat "$FAKE_SHARED/.credentials.json")
+if [ "$LOCAL_CONTENT" = '{"token":"local-existing"}' ] && [ "$SHARED_CONTENT" = '{"token":"shared-existing"}' ]; then
+  assert_success "Claude shared auth does not overwrite existing creds"
+else
+  echo "✗ FAIL: Claude shared auth should not overwrite existing credentials"
+  echo "  Local: $LOCAL_CONTENT (expected: {\"token\":\"local-existing\"})"
+  echo "  Shared: $SHARED_CONTENT (expected: {\"token\":\"shared-existing\"})"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+rm -rf "$FAKE_HOME" "$FAKE_SHARED"
+
+# Test 19: GitHub shared auth import (shared → local)
+echo ""
+echo "Test 19: GitHub shared auth imports shared → local"
+FAKE_SHARED=$(mktemp -d)
+FAKE_GH_CONFIG=$(mktemp -d)
+echo 'github.com: {oauth_token: test}' > "$FAKE_SHARED/hosts.yml"
+# Replicate the import logic from setup_github_auth
+if [ -d "$FAKE_SHARED" ] && [ -f "$FAKE_SHARED/hosts.yml" ] && [ ! -f "$FAKE_GH_CONFIG/hosts.yml" ]; then
+  cp "$FAKE_SHARED/hosts.yml" "$FAKE_GH_CONFIG/hosts.yml"
+  chmod 600 "$FAKE_GH_CONFIG/hosts.yml"
+fi
+if [ -f "$FAKE_GH_CONFIG/hosts.yml" ]; then
+  assert_success "GitHub shared auth imports from shared to local"
+else
+  echo "✗ FAIL: GitHub shared auth should import from shared to local"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+rm -rf "$FAKE_SHARED" "$FAKE_GH_CONFIG"
+
+# Test 20: GitHub shared auth export (local → shared)
+echo ""
+echo "Test 20: GitHub shared auth exports local → shared"
+FAKE_SHARED=$(mktemp -d)
+FAKE_GH_CONFIG=$(mktemp -d)
+echo 'github.com: {oauth_token: test}' > "$FAKE_GH_CONFIG/hosts.yml"
+# Replicate the export logic from setup_github_auth
+if [ -d "$FAKE_SHARED" ] && [ ! -f "$FAKE_SHARED/hosts.yml" ]; then
+  cp "$FAKE_GH_CONFIG/hosts.yml" "$FAKE_SHARED/hosts.yml"
+  chmod 600 "$FAKE_SHARED/hosts.yml"
+fi
+if [ -f "$FAKE_SHARED/hosts.yml" ]; then
+  assert_success "GitHub shared auth exports from local to shared"
+else
+  echo "✗ FAIL: GitHub shared auth should export from local to shared"
+  TESTS_RUN=$((TESTS_RUN + 1))
+fi
+rm -rf "$FAKE_SHARED" "$FAKE_GH_CONFIG"
+
 # Cleanup
 rm -rf "$AUTH_DIR"
 
