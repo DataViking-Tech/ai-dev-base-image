@@ -82,6 +82,9 @@ ENV PYTHONPATH="/opt/ai-coding-utils"
 # Embed Claude agent configurations for downstream projects
 COPY lib/agent-configs/claude-agents/ /opt/agent-configs/claude-agents/
 
+# Embed agent configs (GitHub Copilot workspace agents)
+COPY lib/agent-configs/github-agents/ /opt/agent-configs/github-agents/
+
 # Embed dev-infra (devcontainer components, secrets manager, project setup)
 COPY lib/dev-infra/components/ /opt/dev-infra/
 COPY lib/dev-infra/secrets /opt/dev-infra/secrets
@@ -143,7 +146,7 @@ LABEL devcontainer.metadata='[{ \
       } \
     } \
   }, \
-  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh", \
+  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/install-agents.sh", \
   "postStartCommand": "/opt/dev-infra/setup/start_gastown_services.sh; /opt/dev-infra/setup/start_beads_notifier.sh" \
 }]'
 
