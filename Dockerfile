@@ -93,6 +93,7 @@ RUN chmod +x /opt/dev-infra/*.sh /opt/dev-infra/setup/*.sh \
 
 # Copy utility documentation into the image for downstream layering
 COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md
+COPY docs/.gitattributes /usr/local/share/image-docs/.gitattributes
 
 # Copy auto-source script
 COPY ai-dev-utils.sh /etc/profile.d/ai-dev-utils.sh
@@ -142,7 +143,7 @@ LABEL devcontainer.metadata='[{ \
       } \
     } \
   }, \
-  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/install-agents.sh", \
+  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; [ ! -f .gitattributes ] && cp /usr/local/share/image-docs/.gitattributes .gitattributes 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/install-agents.sh", \
   "postStartCommand": "/opt/dev-infra/setup/start_gastown_services.sh; /opt/dev-infra/setup/start_beads_notifier.sh" \
 }]'
 
