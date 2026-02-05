@@ -59,6 +59,11 @@ setup_github_auth() {
   local SENTINEL_FILE="$AUTH_DIR/.gh-auth-checked"
   local SHARED_GH_DIR="/home/vscode/.shared-auth/gh"
 
+  # Fix Docker volume ownership: Docker creates named volumes as root:root
+  if [ -d "$SHARED_GH_DIR" ] && [ ! -w "$SHARED_GH_DIR" ]; then
+    sudo chown -R "$(id -u):$(id -g)" "$SHARED_GH_DIR" 2>/dev/null || true
+  fi
+
   # Sentinel: skip full check if already verified this container boot
   if [ -f "$SENTINEL_FILE" ]; then
     return 0
@@ -159,6 +164,11 @@ setup_claude_shared_auth() {
 
   # Skip if shared volume not mounted
   [ -d "$SHARED_CLAUDE_DIR" ] || return 0
+
+  # Fix Docker volume ownership: Docker creates named volumes as root:root
+  if [ ! -w "$SHARED_CLAUDE_DIR" ]; then
+    sudo chown -R "$(id -u):$(id -g)" "$SHARED_CLAUDE_DIR" 2>/dev/null || true
+  fi
 
   # Import: shared → local (pick up auth from another container)
   if [ -f "$SHARED_CLAUDE_DIR/.credentials.json" ] && [ ! -f "$CLAUDE_CREDS" ]; then
