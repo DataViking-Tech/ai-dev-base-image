@@ -61,6 +61,9 @@ RUN ln -sf /home/vscode/.local/bin/claude /usr/local/bin/claude
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex
 
+# Install Wrangler (Cloudflare CLI) globally
+RUN bun install -g wrangler
+
 # Embed ai-coding-utils (slack notifications + beads hooks)
 COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
 COPY lib/ai-coding-utils/beads /opt/ai-coding-utils/beads
