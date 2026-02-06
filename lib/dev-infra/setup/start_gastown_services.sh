@@ -23,6 +23,11 @@ if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
 fi
 
 # --- Gastown services ---
+# Skip gastown services if disabled via env var (default: enabled)
+if [ "${GASTOWN_ENABLED:-true}" = "false" ]; then
+  exit 0
+fi
+
 if ! command -v gt >/dev/null 2>&1; then
   exit 0
 fi

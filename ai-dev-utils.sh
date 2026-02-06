@@ -25,7 +25,8 @@ if [ -d "/opt/dev-infra" ]; then
     fi
 
     # Gastown environment (init handled by ensure_gastown.sh at container create)
-    if command -v gt >/dev/null 2>&1; then
+    # Skip if gastown is disabled via GASTOWN_ENABLED=false
+    if [ "${GASTOWN_ENABLED:-true}" != "false" ] && command -v gt >/dev/null 2>&1; then
         export GASTOWN_HOME="${GASTOWN_HOME:-$HOME/gt}"
     fi
 
