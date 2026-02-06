@@ -28,6 +28,12 @@ if [ -d "/opt/dev-infra" ]; then
     # Only set up gastown context when enabled (default: true)
     if [ "${GASTOWN_ENABLED:-true}" != "false" ] && command -v gt >/dev/null 2>&1; then
         export GASTOWN_HOME="${GASTOWN_HOME:-$HOME/gt}"
+        # Source rig env to set BEADS_DIR for correct beads location.
+        # Without this, bd auto-discovers .beads/ in the project directory
+        # instead of using the rig's beads at $GASTOWN_HOME/<rig>/.beads/.
+        if [ -z "${BEADS_DIR:-}" ] && [ -f "$GASTOWN_HOME/.rig_env" ]; then
+            source "$GASTOWN_HOME/.rig_env" 2>/dev/null || true
+        fi
     fi
 
     # Directory creation component
