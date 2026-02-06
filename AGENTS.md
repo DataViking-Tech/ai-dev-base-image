@@ -38,3 +38,29 @@ bd sync               # Sync with git
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+## Refinery: Post-Merge Cleanup
+
+After confirming a PR is merged to main, the refinery should clean up the source polecat branch to prevent branch accumulation.
+
+**Steps:**
+
+1. **Extract source branch** from the MR bead description (`branch` field):
+   ```bash
+   bd show <mr-bead-id>   # Look for branch: polecat/<worker>/<issue>@<timestamp>
+   ```
+
+2. **Delete remote branch:**
+   ```bash
+   git push origin --delete <source-branch>
+   ```
+
+3. **Update MR bead status** to closed:
+   ```bash
+   bd close <mr-bead-id>
+   ```
+
+**Why this matters:**
+- Polecat branches (`polecat/<worker>/<issue>@<timestamp>`) accumulate on the remote after merge
+- Each polecat session creates a uniquely-timestamped branch
+- Without cleanup, the remote fills with stale branches over time
+
