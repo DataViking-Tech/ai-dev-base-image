@@ -7,11 +7,7 @@ set -euo pipefail
 
 # Skip gastown setup if disabled via env var (default: enabled)
 # Downstream containers can set GASTOWN_ENABLED=false in devcontainer.json containerEnv
-if [ "${GASTOWN_ENABLED:-true}" = "false" ]; then
-  exit 0
-fi
-
-if ! command -v gt >/dev/null 2>&1; then
+if [ "${GASTOWN_ENABLED:-true}" = "false" ] || ! command -v gt >/dev/null 2>&1; then
   exit 0
 fi
 
