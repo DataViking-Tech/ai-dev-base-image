@@ -24,11 +24,7 @@ fi
 
 # --- Gastown services ---
 # Skip gastown services if disabled via env var (default: enabled)
-if [ "${GASTOWN_ENABLED:-true}" = "false" ]; then
-  exit 0
-fi
-
-if ! command -v gt >/dev/null 2>&1; then
+if [ "${GASTOWN_ENABLED:-true}" = "false" ] || ! command -v gt >/dev/null 2>&1; then
   exit 0
 fi
 

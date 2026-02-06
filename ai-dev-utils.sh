@@ -25,7 +25,7 @@ if [ -d "/opt/dev-infra" ]; then
     fi
 
     # Gastown environment (init handled by ensure_gastown.sh at container create)
-    # Skip if gastown is disabled via GASTOWN_ENABLED=false
+    # Only set up gastown context when enabled (default: true)
     if [ "${GASTOWN_ENABLED:-true}" != "false" ] && command -v gt >/dev/null 2>&1; then
         export GASTOWN_HOME="${GASTOWN_HOME:-$HOME/gt}"
     fi
@@ -57,8 +57,10 @@ alias bd-sync='bd sync'
 alias bd-list='bd list'
 alias py='python3'
 alias pip='pip3'
-alias gt-status='gt status'
-alias gt-doctor='gt doctor'
+if [ "${GASTOWN_ENABLED:-true}" != "false" ]; then
+    alias gt-status='gt status'
+    alias gt-doctor='gt doctor'
+fi
 
 # Extensible - projects can add their own aliases
 # Place project-specific aliases in /workspace/.devcontainer/aliases.sh
