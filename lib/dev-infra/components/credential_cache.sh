@@ -304,6 +304,10 @@ setup_cloudflare_auth() {
   if [ -f "$CF_TOKEN_FILE" ]; then
     echo "✓ Cloudflare API token found in cache"
     export CLOUDFLARE_API_TOKEN="$(cat "$CF_TOKEN_FILE")"
+    # Load cached account ID if available
+    if [ -f "$AUTH_DIR/cloudflare_account_id" ]; then
+      export CLOUDFLARE_ACCOUNT_ID="$(cat "$AUTH_DIR/cloudflare_account_id")"
+    fi
     return 0
   fi
 
@@ -320,6 +324,12 @@ setup_cloudflare_auth() {
     echo "${CLOUDFLARE_API_TOKEN}" > "$CF_TOKEN_FILE"
     chmod 600 "$CF_TOKEN_FILE"
     echo "✓ Cloudflare API token cached from environment"
+    # Cache account ID if provided
+    if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+      echo "${CLOUDFLARE_ACCOUNT_ID}" > "$AUTH_DIR/cloudflare_account_id"
+      chmod 600 "$AUTH_DIR/cloudflare_account_id"
+      export CLOUDFLARE_ACCOUNT_ID
+    fi
     return 0
   fi
 
