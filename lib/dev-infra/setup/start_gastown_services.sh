@@ -10,12 +10,12 @@ set -euo pipefail
 # Run before gastown services so credentials are available to agents.
 # Interactive shells get this via /etc/profile.d/ai-dev-utils.sh;
 # postStartCommand runs non-interactively, so we run it here too.
-# Services default to "github claude"; projects can override via env var.
+# Services default to "github cloudflare claude"; projects can override via env var.
 #   e.g. in devcontainer.json containerEnv:
-#     "CREDENTIAL_CACHE_SERVICES": "github cloudflare claude"
+#     "CREDENTIAL_CACHE_SERVICES": "github claude"
 if [ -f "/opt/dev-infra/credential_cache.sh" ]; then
   source "/opt/dev-infra/credential_cache.sh"
-  IFS=' ' read -ra _services <<< "${CREDENTIAL_CACHE_SERVICES:-github claude}"
+  IFS=' ' read -ra _services <<< "${CREDENTIAL_CACHE_SERVICES:-github cloudflare claude}"
   setup_credential_cache "${_services[@]}" || true
   unset _services
   # Verify credentials propagated correctly; re-import from shared if needed

@@ -259,6 +259,64 @@ assert_perms "$AUTH_DIR/cloudflare_api_token" "600" "Cloudflare token file has 6
 unset CLOUDFLARE_API_TOKEN
 rm -f "$AUTH_DIR/cloudflare_api_token"
 
+# Test 6b: Cloudflare account ID caching from environment
+echo ""
+echo "Test 6b: Cloudflare account ID caching from environment"
+unset CLOUDFLARE_API_TOKEN
+unset CLOUDFLARE_ACCOUNT_ID
+
+# Set both env vars and run setup
+export CLOUDFLARE_API_TOKEN="test_cf_token_789"
+export CLOUDFLARE_ACCOUNT_ID="test_account_id_abc"
+setup_cloudflare_auth >/dev/null 2>&1
+
+assert_file_exists "$AUTH_DIR/cloudflare_account_id" "Cloudflare account ID file created"
+assert_perms "$AUTH_DIR/cloudflare_account_id" "600" "Cloudflare account ID file has 600 permissions"
+
+# Verify the content
+CACHED_ACCOUNT_ID=$(cat "$AUTH_DIR/cloudflare_account_id" 2>/dev/null)
+if [ "$CACHED_ACCOUNT_ID" = "test_account_id_abc" ]; then
+  assert_success "Cloudflare account ID cached correctly"
+else
+  assert_failure "Cloudflare account ID cached correctly" \
+    "Expected: test_account_id_abc, Actual: $CACHED_ACCOUNT_ID"
+fi
+
+# Cleanup
+unset CLOUDFLARE_API_TOKEN
+unset CLOUDFLARE_ACCOUNT_ID
+rm -f "$AUTH_DIR/cloudflare_api_token"
+rm -f "$AUTH_DIR/cloudflare_account_id"
+
+# Test 6c: Cloudflare account ID loaded from cache
+echo ""
+echo "Test 6c: Cloudflare account ID loaded from cache"
+unset CLOUDFLARE_API_TOKEN
+unset CLOUDFLARE_ACCOUNT_ID
+
+# Pre-cache token and account ID
+mkdir -p "$AUTH_DIR"
+echo "test_cf_token_load" > "$AUTH_DIR/cloudflare_api_token"
+chmod 600 "$AUTH_DIR/cloudflare_api_token"
+echo "test_account_id_load" > "$AUTH_DIR/cloudflare_account_id"
+chmod 600 "$AUTH_DIR/cloudflare_account_id"
+
+# Run setup (Tier 1 path - load from cache)
+setup_cloudflare_auth >/dev/null 2>&1
+
+if [ "$CLOUDFLARE_ACCOUNT_ID" = "test_account_id_load" ]; then
+  assert_success "Cloudflare account ID loaded from cache"
+else
+  assert_failure "Cloudflare account ID loaded from cache" \
+    "Expected: test_account_id_load, Actual: $CLOUDFLARE_ACCOUNT_ID"
+fi
+
+# Cleanup
+unset CLOUDFLARE_API_TOKEN
+unset CLOUDFLARE_ACCOUNT_ID
+rm -f "$AUTH_DIR/cloudflare_api_token"
+rm -f "$AUTH_DIR/cloudflare_account_id"
+
 # Test 7: Cloudflare Wrangler config
 echo ""
 echo "Test 7: Cloudflare Wrangler config symlink"
