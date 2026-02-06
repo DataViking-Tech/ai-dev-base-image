@@ -95,6 +95,32 @@ gt tap guard       # Run a tap guard (e.g., pr-workflow)
 |-----------------|-------------|------------------------------|
 | `GASTOWN_HOME`  | `$HOME/gt`  | Gastown workspace directory  |
 
+### Crew Configuration (`/opt/dev-infra/setup/ensure_crew.sh`)
+
+Downstream projects can declare crew members in `.devcontainer/crew.json`. On container creation, the script reads the config and runs `gt crew add` for each member (idempotent).
+
+**Config format:**
+
+```json
+{
+  "crew": [
+    {"name": "frontend", "description": "UI/UX work"},
+    {"name": "backend", "description": "API and pipeline"},
+    {"name": "infra", "description": "Deployment and infrastructure"}
+  ]
+}
+```
+
+Simple list format is also supported:
+
+```json
+{
+  "crew": ["frontend", "backend", "infra"]
+}
+```
+
+**Requirements:** Gastown must be enabled (`GASTOWN_ENABLED` not set to `false`) and the project must be registered as a rig.
+
 ## Shell Aliases
 
 Defined in `/etc/profile.d/ai-dev-utils.sh` and available in every shell:
