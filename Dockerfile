@@ -97,7 +97,8 @@ RUN chmod +x /opt/dev-infra/*.sh /opt/dev-infra/setup/*.sh \
     && chmod +x /opt/dev-infra/setup/ensure_gastown.sh \
     && chmod +x /opt/dev-infra/setup/ensure_crew.sh \
     && chmod +x /opt/dev-infra/setup/start_gastown_services.sh \
-    && chmod +x /opt/dev-infra/setup/start_beads_notifier.sh
+    && chmod +x /opt/dev-infra/setup/start_beads_notifier.sh \
+    && chmod +x /opt/dev-infra/setup/daemon_watchdog.sh
 
 # Copy utility documentation and defaults into the image for downstream layering
 COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md

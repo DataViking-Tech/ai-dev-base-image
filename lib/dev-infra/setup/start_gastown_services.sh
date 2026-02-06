@@ -36,3 +36,12 @@ if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
 fi
 
 cd "$GASTOWN_HOME" && gt up -q 2>/dev/null || true
+
+# --- Daemon health watchdog ---
+# Runs in background to detect and restart crashed daemon.
+# Idempotent: script checks its own PID file before starting.
+WATCHDOG_SCRIPT="/opt/dev-infra/setup/daemon_watchdog.sh"
+if [ -f "$WATCHDOG_SCRIPT" ]; then
+  nohup "$WATCHDOG_SCRIPT" </dev/null >/dev/null 2>&1 &
+  disown
+fi
