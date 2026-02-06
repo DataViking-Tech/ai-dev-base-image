@@ -518,6 +518,97 @@ else
 fi
 rm -rf "$FAKE_OPT"
 
+# -----------------------------------------------------------
+# Test 13: GASTOWN_ENABLED=false skips ensure_gastown.sh entirely
+# -----------------------------------------------------------
+echo ""
+echo "Test 13: GASTOWN_ENABLED=false skips ensure_gastown.sh"
+if command -v gt >/dev/null 2>&1; then
+  WORK_DIR=$(mktemp -d)
+  FAKE_GT_HOME=$(mktemp -d)
+  FAKE_HOME=$(mktemp -d)
+  mkdir -p "$FAKE_GT_HOME/mayor"
+  echo '{}' > "$FAKE_GT_HOME/mayor/town.json"
+  (
+    cd "$WORK_DIR"
+    git init -q .
+    git remote add origin https://example.com/test/repo.git 2>/dev/null || true
+    GASTOWN_ENABLED=false GASTOWN_HOME="$FAKE_GT_HOME" HOME="$FAKE_HOME" bash "$ENSURE_GASTOWN" 2>/dev/null || true
+  )
+  # When disabled, no .gitignore entries should be added and no settings.json created
+  SETTINGS="$FAKE_HOME/.claude/settings.json"
+  if [ ! -f "$SETTINGS" ] && ! grep -qx '.events.jsonl' "$WORK_DIR/.gitignore" 2>/dev/null; then
+    assert_success "GASTOWN_ENABLED=false skips ensure_gastown.sh"
+  else
+    assert_failure "GASTOWN_ENABLED=false skips ensure_gastown.sh" \
+      "settings.json exists: $([ -f "$SETTINGS" ] && echo yes || echo no), gitignore has gastown: $(grep -c '.events.jsonl' "$WORK_DIR/.gitignore" 2>/dev/null || echo 0)"
+  fi
+  rm -rf "$WORK_DIR" "$FAKE_GT_HOME" "$FAKE_HOME"
+else
+  TESTS_RUN=$((TESTS_RUN + 1))
+  echo "⊘ SKIP: Test 13 (gt CLI not installed)"
+fi
+
+# -----------------------------------------------------------
+# Test 14: GASTOWN_ENABLED=false skips gastown services but runs cred cache
+# -----------------------------------------------------------
+echo ""
+echo "Test 14: GASTOWN_ENABLED=false skips gastown services but runs credential cache"
+FAKE_OPT=$(mktemp -d)
+mkdir -p "$FAKE_OPT/dev-infra/setup"
+cat > "$FAKE_OPT/dev-infra/credential_cache.sh" << 'MOCKEOF'
+setup_credential_cache() {
+  echo "CRED_SERVICES_CALLED: $*"
+  return 0
+}
+verify_credential_propagation() {
+  return 0
+}
+MOCKEOF
+sed "s|/opt/dev-infra|$FAKE_OPT/dev-infra|g" "$START_GASTOWN" > "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
+chmod +x "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
+# Run with GASTOWN_ENABLED=false - should still run cred cache but skip gt up
+OUTPUT=$(GASTOWN_ENABLED=false PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
+if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github claude"; then
+  assert_success "Credential cache still runs when gastown disabled"
+else
+  assert_failure "Credential cache still runs when gastown disabled" \
+    "Output: $OUTPUT"
+fi
+rm -rf "$FAKE_OPT"
+
+# -----------------------------------------------------------
+# Test 15: GASTOWN_ENABLED unset (default) allows normal operation
+# -----------------------------------------------------------
+echo ""
+echo "Test 15: GASTOWN_ENABLED unset (default) allows normal ensure_gastown.sh"
+if command -v gt >/dev/null 2>&1; then
+  WORK_DIR=$(mktemp -d)
+  FAKE_GT_HOME=$(mktemp -d)
+  FAKE_HOME=$(mktemp -d)
+  mkdir -p "$FAKE_GT_HOME/mayor"
+  echo '{}' > "$FAKE_GT_HOME/mayor/town.json"
+  (
+    cd "$WORK_DIR"
+    git init -q .
+    git remote add origin https://example.com/test/repo.git 2>/dev/null || true
+    # Explicitly unset GASTOWN_ENABLED to test default behavior
+    unset GASTOWN_ENABLED
+    GASTOWN_HOME="$FAKE_GT_HOME" HOME="$FAKE_HOME" bash "$ENSURE_GASTOWN" 2>/dev/null || true
+  )
+  SETTINGS="$FAKE_HOME/.claude/settings.json"
+  if [ -f "$SETTINGS" ] && grep -qx '.events.jsonl' "$WORK_DIR/.gitignore" 2>/dev/null; then
+    assert_success "Default (unset) GASTOWN_ENABLED allows normal operation"
+  else
+    assert_failure "Default (unset) GASTOWN_ENABLED allows normal operation" \
+      "settings.json exists: $([ -f "$SETTINGS" ] && echo yes || echo no), gitignore has gastown: $(grep -c '.events.jsonl' "$WORK_DIR/.gitignore" 2>/dev/null || echo 0)"
+  fi
+  rm -rf "$WORK_DIR" "$FAKE_GT_HOME" "$FAKE_HOME"
+else
+  TESTS_RUN=$((TESTS_RUN + 1))
+  echo "⊘ SKIP: Test 15 (gt CLI not installed)"
+fi
+
 # Summary
 echo ""
 echo "========================================"
