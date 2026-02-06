@@ -95,6 +95,7 @@ COPY lib/dev-infra/setup /opt/dev-infra/setup
 RUN chmod +x /opt/dev-infra/*.sh /opt/dev-infra/setup/*.sh \
     && chmod +x /opt/ai-coding-utils/beads/setup/ensure_beads.sh \
     && chmod +x /opt/dev-infra/setup/ensure_gastown.sh \
+    && chmod +x /opt/dev-infra/setup/ensure_crew.sh \
     && chmod +x /opt/dev-infra/setup/start_gastown_services.sh \
     && chmod +x /opt/dev-infra/setup/start_beads_notifier.sh
 
@@ -153,7 +154,7 @@ LABEL devcontainer.metadata='[{ \
       } \
     } \
   }, \
-  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; [ ! -f .gitattributes ] && cp /usr/local/share/image-docs/.gitattributes .gitattributes 2>/dev/null || true; [ ! -f CLAUDE.md ] && cp /usr/local/share/image-docs/CLAUDE.md CLAUDE.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/install-agents.sh", \
+  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; [ ! -f .gitattributes ] && cp /usr/local/share/image-docs/.gitattributes .gitattributes 2>/dev/null || true; [ ! -f CLAUDE.md ] && cp /usr/local/share/image-docs/CLAUDE.md CLAUDE.md 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/ensure_crew.sh; /opt/dev-infra/setup/install-agents.sh", \
   "postStartCommand": "/opt/dev-infra/setup/start_gastown_services.sh; /opt/dev-infra/setup/start_beads_notifier.sh" \
 }]'
 
