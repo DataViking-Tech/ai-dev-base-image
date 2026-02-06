@@ -480,13 +480,16 @@ setup_credential_cache() {
   echo "CRED_SERVICES_CALLED: $*"
   return 0
 }
+verify_credential_propagation() {
+  return 0
+}
 MOCKEOF
 # Copy start_gastown_services.sh to use our mock path
 sed "s|/opt/dev-infra|$FAKE_OPT/dev-infra|g" "$START_GASTOWN" > "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
 chmod +x "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
 # Run without gt available (to skip gastown services, just test cred setup)
 OUTPUT=$(PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
-if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github claude"; then
+if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github cloudflare claude"; then
   assert_success "start_gastown_services.sh runs credential setup with defaults"
 else
   assert_failure "start_gastown_services.sh runs credential setup with defaults" \
@@ -569,7 +572,7 @@ sed "s|/opt/dev-infra|$FAKE_OPT/dev-infra|g" "$START_GASTOWN" > "$FAKE_OPT/dev-i
 chmod +x "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh"
 # Run with GASTOWN_ENABLED=false - should still run cred cache but skip gt up
 OUTPUT=$(GASTOWN_ENABLED=false PATH="/usr/bin:/bin" bash "$FAKE_OPT/dev-infra/setup/start_gastown_services.sh" 2>&1)
-if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github claude"; then
+if echo "$OUTPUT" | grep -q "CRED_SERVICES_CALLED: github cloudflare claude"; then
   assert_success "Credential cache still runs when gastown disabled"
 else
   assert_failure "Credential cache still runs when gastown disabled" \
@@ -607,6 +610,119 @@ if command -v gt >/dev/null 2>&1; then
 else
   TESTS_RUN=$((TESTS_RUN + 1))
   echo "⊘ SKIP: Test 15 (gt CLI not installed)"
+fi
+
+# -----------------------------------------------------------
+# Test 16: Creates .rig_env with BEADS_DIR after rig registration
+# -----------------------------------------------------------
+echo ""
+echo "Test 16: Creates .rig_env with BEADS_DIR after rig registration"
+if command -v gt >/dev/null 2>&1; then
+  WORK_DIR=$(mktemp -d)
+  FAKE_GT_HOME=$(mktemp -d)
+  FAKE_HOME=$(mktemp -d)
+  mkdir -p "$FAKE_GT_HOME/mayor"
+  echo '{}' > "$FAKE_GT_HOME/mayor/town.json"
+  (
+    cd "$WORK_DIR"
+    git init -q .
+    git remote add origin https://example.com/test/repo.git 2>/dev/null || true
+    GASTOWN_HOME="$FAKE_GT_HOME" HOME="$FAKE_HOME" bash "$ENSURE_GASTOWN" 2>/dev/null || true
+  )
+  RIG_NAME=$(basename "$WORK_DIR" | tr -- '-. ' '_')
+  RIG_ENV="$FAKE_GT_HOME/.rig_env"
+  if [ -f "$RIG_ENV" ] && grep -q "BEADS_DIR=" "$RIG_ENV" && grep -q "$RIG_NAME/.beads" "$RIG_ENV"; then
+    assert_success "Creates .rig_env with BEADS_DIR pointing to rig beads"
+  else
+    assert_failure "Creates .rig_env with BEADS_DIR pointing to rig beads" \
+      "rig_env exists: $([ -f "$RIG_ENV" ] && echo yes || echo no), content: $(cat "$RIG_ENV" 2>/dev/null || echo '<none>')"
+  fi
+  rm -rf "$WORK_DIR" "$FAKE_GT_HOME" "$FAKE_HOME"
+else
+  TESTS_RUN=$((TESTS_RUN + 1))
+  echo "⊘ SKIP: Test 16 (gt CLI not installed)"
+fi
+
+# -----------------------------------------------------------
+# Test 17: .rig_env creates rig .beads directory
+# -----------------------------------------------------------
+echo ""
+echo "Test 17: .rig_env rig .beads directory is created"
+if command -v gt >/dev/null 2>&1; then
+  WORK_DIR=$(mktemp -d)
+  FAKE_GT_HOME=$(mktemp -d)
+  FAKE_HOME=$(mktemp -d)
+  mkdir -p "$FAKE_GT_HOME/mayor"
+  echo '{}' > "$FAKE_GT_HOME/mayor/town.json"
+  (
+    cd "$WORK_DIR"
+    git init -q .
+    git remote add origin https://example.com/test/repo.git 2>/dev/null || true
+    GASTOWN_HOME="$FAKE_GT_HOME" HOME="$FAKE_HOME" bash "$ENSURE_GASTOWN" 2>/dev/null || true
+  )
+  RIG_NAME=$(basename "$WORK_DIR" | tr -- '-. ' '_')
+  if [ -d "$FAKE_GT_HOME/$RIG_NAME/.beads" ]; then
+    assert_success "Rig .beads directory is created"
+  else
+    assert_failure "Rig .beads directory is created" \
+      "Directory $FAKE_GT_HOME/$RIG_NAME/.beads does not exist"
+  fi
+  rm -rf "$WORK_DIR" "$FAKE_GT_HOME" "$FAKE_HOME"
+else
+  TESTS_RUN=$((TESTS_RUN + 1))
+  echo "⊘ SKIP: Test 17 (gt CLI not installed)"
+fi
+
+# -----------------------------------------------------------
+# Test 18: PreToolUse hooks include mayor-edit guard for Edit/Write
+# -----------------------------------------------------------
+echo ""
+echo "Test 18: PreToolUse hooks include mayor-edit guard for Edit/Write"
+if command -v gt >/dev/null 2>&1; then
+  WORK_DIR=$(mktemp -d)
+  FAKE_GT_HOME=$(mktemp -d)
+  FAKE_HOME=$(mktemp -d)
+  mkdir -p "$FAKE_GT_HOME/mayor"
+  echo '{}' > "$FAKE_GT_HOME/mayor/town.json"
+  (
+    cd "$WORK_DIR"
+    git init -q .
+    GASTOWN_HOME="$FAKE_GT_HOME" HOME="$FAKE_HOME" bash "$ENSURE_GASTOWN" 2>/dev/null || true
+  )
+  SETTINGS="$FAKE_HOME/.claude/settings.json"
+  if [ -f "$SETTINGS" ]; then
+    RESULT=$(python3 -c "
+import json, sys
+with open('$SETTINGS') as f:
+    data = json.load(f)
+pre = data.get('hooks', {}).get('PreToolUse', [])
+found_edit = False
+found_write = False
+for entry in pre:
+    matcher = entry.get('matcher', '')
+    for h in entry.get('hooks', []):
+        if 'mayor-edit' in h.get('command', ''):
+            if matcher == 'Edit':
+                found_edit = True
+            if matcher == 'Write':
+                found_write = True
+if found_edit and found_write:
+    print('OK')
+else:
+    print(f'edit={found_edit} write={found_write}')
+" 2>&1)
+    if [ "$RESULT" = "OK" ]; then
+      assert_success "PreToolUse hooks include mayor-edit guard for Edit and Write"
+    else
+      assert_failure "PreToolUse hooks include mayor-edit guard for Edit and Write" "$RESULT"
+    fi
+  else
+    assert_failure "PreToolUse hooks include mayor-edit guard for Edit and Write" "settings.json not created"
+  fi
+  rm -rf "$WORK_DIR" "$FAKE_GT_HOME" "$FAKE_HOME"
+else
+  TESTS_RUN=$((TESTS_RUN + 1))
+  echo "⊘ SKIP: Test 18 (gt CLI not installed)"
 fi
 
 # Summary
