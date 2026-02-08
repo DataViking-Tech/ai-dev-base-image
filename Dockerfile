@@ -53,6 +53,14 @@ RUN (type -p wget >/dev/null || (apt-get update && apt-get install -y wget)) && 
     apt-get update && apt-get install -y gh && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Doppler CLI (secrets management)
+RUN curl -sLf --retry 3 --tlsv1.2 --proto "=https" 'https://packages.doppler.com/public/cli/gpg.DE2A7741A397C129.key' | \
+    gpg --dearmor -o /etc/apt/keyrings/doppler.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/doppler.gpg] https://packages.doppler.com/public/cli/deb/debian any-version main" | \
+    tee /etc/apt/sources.list.d/doppler-cli.list && \
+    apt-get update && apt-get install -y doppler && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install uv (Python package manager) to system-wide location
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh && \
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx

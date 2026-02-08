@@ -44,6 +44,9 @@ test_command() {
 # Test GitHub CLI
 test_command "GitHub CLI (gh)" "gh --version" "gh version"
 
+# Test Doppler CLI
+test_command "Doppler CLI" "doppler --version" "doppler"
+
 # Test Claude CLI
 test_command "Claude CLI" "claude --version" "claude"
 
