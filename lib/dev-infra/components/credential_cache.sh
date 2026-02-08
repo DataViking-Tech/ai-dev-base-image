@@ -21,6 +21,16 @@ get_workspace_root() {
 # Auth directory (always under workspace root)
 AUTH_DIR="$(get_workspace_root)/temp/auth"
 
+# Credential cache logging - writes to stderr for debugging
+# Set CREDENTIAL_CACHE_DEBUG=1 to enable verbose logging
+_cred_log() {
+  local level="$1"
+  shift
+  if [ "${CREDENTIAL_CACHE_DEBUG:-0}" = "1" ] || [ "$level" = "WARN" ]; then
+    echo "[credential_cache] $level: $*" >&2
+  fi
+}
+
 # Main entry point - setup credentials for requested services
 # Usage: setup_credential_cache "github" "cloudflare"
 setup_credential_cache() {
@@ -64,8 +74,21 @@ setup_github_auth() {
     sudo chown -R "$(id -u):$(id -g)" "$SHARED_GH_DIR" 2>/dev/null || true
   fi
 
-  # Sentinel: skip full check if already verified this container boot
+  # Defensive re-check: even if sentinel exists, re-import from shared if
+  # local GH_CONFIG_DIR is empty but shared volume has credentials.
+  # This handles sessions that start before shared volume is populated.
   if [ -f "$SENTINEL_FILE" ]; then
+    if [ ! -f "$HOSTS_FILE" ] && [ -d "$SHARED_GH_DIR" ] && [ -f "$SHARED_GH_DIR/hosts.yml" ]; then
+      _cred_log INFO "Re-importing gh credentials from shared volume (local was empty)"
+      mkdir -p "$GH_CONFIG_DIR"
+      chmod 700 "$GH_CONFIG_DIR"
+      cp "$SHARED_GH_DIR/hosts.yml" "$HOSTS_FILE"
+      chmod 600 "$HOSTS_FILE"
+      if [ -f "$SHARED_GH_DIR/config.yml" ] && [ ! -f "$GH_CONFIG_DIR/config.yml" ]; then
+        cp "$SHARED_GH_DIR/config.yml" "$GH_CONFIG_DIR/config.yml"
+      fi
+      echo "✓ GitHub CLI authenticated (re-imported from shared)"
+    fi
     return 0
   fi
 
@@ -81,6 +104,7 @@ setup_github_auth() {
 
   # Shared auth volume: import credentials from shared volume
   if [ -d "$SHARED_GH_DIR" ] && [ -f "$SHARED_GH_DIR/hosts.yml" ] && [ ! -f "$HOSTS_FILE" ]; then
+    _cred_log INFO "Importing gh credentials from shared volume → $GH_CONFIG_DIR"
     cp "$SHARED_GH_DIR/hosts.yml" "$HOSTS_FILE"
     chmod 600 "$HOSTS_FILE"
     if [ -f "$SHARED_GH_DIR/config.yml" ] && [ ! -f "$GH_CONFIG_DIR/config.yml" ]; then
@@ -91,6 +115,7 @@ setup_github_auth() {
   # Migrate: if credentials exist in default location but not in cache, copy them
   local DEFAULT_HOSTS="$HOME/.config/gh/hosts.yml"
   if [ ! -f "$HOSTS_FILE" ] && [ -f "$DEFAULT_HOSTS" ]; then
+    _cred_log INFO "Migrating gh credentials from default location → $GH_CONFIG_DIR"
     cp "$DEFAULT_HOSTS" "$HOSTS_FILE"
     chmod 600 "$HOSTS_FILE"
     # Also copy config.yml if present
@@ -104,6 +129,7 @@ setup_github_auth() {
     echo "✓ GitHub CLI authenticated (cached)"
     # Shared auth volume: propagate to shared for other containers
     if [ -d "$SHARED_GH_DIR" ] && [ ! -f "$SHARED_GH_DIR/hosts.yml" ]; then
+      _cred_log INFO "Exporting gh credentials → shared volume"
       cp "$HOSTS_FILE" "$SHARED_GH_DIR/hosts.yml"
       chmod 600 "$SHARED_GH_DIR/hosts.yml"
       [ -f "$GH_CONFIG_DIR/config.yml" ] && cp "$GH_CONFIG_DIR/config.yml" "$SHARED_GH_DIR/config.yml" 2>/dev/null || true
@@ -117,8 +143,10 @@ setup_github_auth() {
     echo "Converting GITHUB_TOKEN to cached OAuth credentials..."
     if echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; then
       echo "✓ GitHub CLI authenticated automatically via GITHUB_TOKEN"
+      _cred_log INFO "Converted GITHUB_TOKEN to cached credentials"
       # Shared auth volume: propagate to shared for other containers
       if [ -d "$SHARED_GH_DIR" ] && [ -f "$HOSTS_FILE" ] && [ ! -f "$SHARED_GH_DIR/hosts.yml" ]; then
+        _cred_log INFO "Exporting converted credentials → shared volume"
         cp "$HOSTS_FILE" "$SHARED_GH_DIR/hosts.yml"
         chmod 600 "$SHARED_GH_DIR/hosts.yml"
         [ -f "$GH_CONFIG_DIR/config.yml" ] && cp "$GH_CONFIG_DIR/config.yml" "$SHARED_GH_DIR/config.yml" 2>/dev/null || true
@@ -135,6 +163,7 @@ setup_github_auth() {
   # (credential helpers, codespace token forwarding, keyring, etc.)
   if gh auth status >/dev/null 2>&1; then
     echo "✓ GitHub CLI authenticated"
+    _cred_log INFO "gh authenticated via external mechanism (credential helper, keyring, etc.)"
     touch "$SENTINEL_FILE"
     return 0
   fi
@@ -149,8 +178,49 @@ setup_github_auth() {
     echo ""
   fi
 
+  _cred_log WARN "No gh credentials found after full auth check"
+
   # Write sentinel even for unauthenticated state to avoid repeated warnings
   touch "$SENTINEL_FILE"
+
+  return 0
+}
+
+# Verify and repair credential propagation
+# Call from postStartCommand or session startup to ensure credentials
+# are available. Re-imports from shared volume if local is empty.
+verify_credential_propagation() {
+  local HOSTS_FILE="$AUTH_DIR/gh-config/hosts.yml"
+  local SHARED_GH_DIR="/home/vscode/.shared-auth/gh"
+  local repaired=0
+
+  # GitHub: re-import from shared if local is missing
+  if [ ! -f "$HOSTS_FILE" ] && [ -d "$SHARED_GH_DIR" ] && [ -f "$SHARED_GH_DIR/hosts.yml" ]; then
+    _cred_log INFO "verify: Re-importing gh credentials from shared volume"
+    mkdir -p "$AUTH_DIR/gh-config"
+    chmod 700 "$AUTH_DIR/gh-config"
+    cp "$SHARED_GH_DIR/hosts.yml" "$HOSTS_FILE"
+    chmod 600 "$HOSTS_FILE"
+    if [ -f "$SHARED_GH_DIR/config.yml" ] && [ ! -f "$AUTH_DIR/gh-config/config.yml" ]; then
+      cp "$SHARED_GH_DIR/config.yml" "$AUTH_DIR/gh-config/config.yml"
+    fi
+    repaired=$((repaired + 1))
+  fi
+
+  # Claude: re-import from shared if local is missing
+  local SHARED_CLAUDE_DIR="/home/vscode/.shared-auth/claude"
+  local CLAUDE_CREDS="$HOME/.claude/.credentials.json"
+  if [ ! -f "$CLAUDE_CREDS" ] && [ -d "$SHARED_CLAUDE_DIR" ] && [ -f "$SHARED_CLAUDE_DIR/.credentials.json" ]; then
+    _cred_log INFO "verify: Re-importing Claude credentials from shared volume"
+    mkdir -p "$HOME/.claude"
+    cp "$SHARED_CLAUDE_DIR/.credentials.json" "$CLAUDE_CREDS"
+    chmod 600 "$CLAUDE_CREDS"
+    repaired=$((repaired + 1))
+  fi
+
+  if [ $repaired -gt 0 ]; then
+    _cred_log INFO "verify: Repaired $repaired credential(s)"
+  fi
 
   return 0
 }
@@ -172,6 +242,7 @@ setup_claude_shared_auth() {
 
   # Import: shared → local (pick up auth from another container)
   if [ -f "$SHARED_CLAUDE_DIR/.credentials.json" ] && [ ! -f "$CLAUDE_CREDS" ]; then
+    _cred_log INFO "Importing Claude credentials from shared volume → local"
     mkdir -p "$HOME/.claude"
     cp "$SHARED_CLAUDE_DIR/.credentials.json" "$CLAUDE_CREDS"
     chmod 600 "$CLAUDE_CREDS"
@@ -179,6 +250,7 @@ setup_claude_shared_auth() {
 
   # Export: local → shared (first-auth propagation)
   if [ -f "$CLAUDE_CREDS" ] && [ ! -f "$SHARED_CLAUDE_DIR/.credentials.json" ]; then
+    _cred_log INFO "Exporting Claude credentials → shared volume"
     cp "$CLAUDE_CREDS" "$SHARED_CLAUDE_DIR/.credentials.json"
     chmod 600 "$SHARED_CLAUDE_DIR/.credentials.json"
   fi
@@ -232,6 +304,10 @@ setup_cloudflare_auth() {
   if [ -f "$CF_TOKEN_FILE" ]; then
     echo "✓ Cloudflare API token found in cache"
     export CLOUDFLARE_API_TOKEN="$(cat "$CF_TOKEN_FILE")"
+    # Load cached account ID if available
+    if [ -f "$AUTH_DIR/cloudflare_account_id" ]; then
+      export CLOUDFLARE_ACCOUNT_ID="$(cat "$AUTH_DIR/cloudflare_account_id")"
+    fi
     return 0
   fi
 
@@ -248,6 +324,12 @@ setup_cloudflare_auth() {
     echo "${CLOUDFLARE_API_TOKEN}" > "$CF_TOKEN_FILE"
     chmod 600 "$CF_TOKEN_FILE"
     echo "✓ Cloudflare API token cached from environment"
+    # Cache account ID if provided
+    if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+      echo "${CLOUDFLARE_ACCOUNT_ID}" > "$AUTH_DIR/cloudflare_account_id"
+      chmod 600 "$AUTH_DIR/cloudflare_account_id"
+      export CLOUDFLARE_ACCOUNT_ID
+    fi
     return 0
   fi
 
