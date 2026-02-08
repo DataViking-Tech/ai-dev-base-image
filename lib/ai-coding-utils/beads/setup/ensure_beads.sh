@@ -13,7 +13,7 @@ if [ -d .beads ]; then
 fi
 
 prefix=$(basename "$PWD")
-echo "y" | bd init --prefix "$prefix" --skip-hooks -q 2>/dev/null || true
+echo "y" | BEADS_DIR= bd init --prefix "$prefix" --skip-hooks -q 2>/dev/null || true
 
 # Ensure .beads/ is in .gitignore
 if [ -d .beads ]; then
