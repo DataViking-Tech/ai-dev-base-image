@@ -35,6 +35,43 @@ if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
   exit 0
 fi
 
+# --- Pre-seed deacon heartbeat ---
+# The daemon reads deacon/heartbeat.json on startup to decide if the deacon
+# is alive. After a container restart, this file is either missing or stale,
+# causing the daemon to parse it as max-duration (2562047h47m) and immediately
+# restart-loop the deacon before it has time to boot. Writing a fresh timestamp
+# here gives the deacon a full patrol interval (~5m) to initialize.
+if [ -d "$GASTOWN_HOME/deacon" ]; then
+  printf '{"timestamp":"%s","status":"booting","patrol_active":false}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$GASTOWN_HOME/deacon/heartbeat.json"
+fi
+
+# --- Ensure town root has a git repo ---
+# The gt daemon's convoy watcher calls `bd activity` from the town root.
+# bd requires a git repo to run its daemon; without one, bd falls back to
+# no-daemon mode where `activity` is unsupported, causing a permanent 5s
+# retry loop. New installs use `gt install --git` but older ones may not
+# have this.
+if [ -d "$GASTOWN_HOME/.beads" ] && [ ! -d "$GASTOWN_HOME/.git" ]; then
+  git -C "$GASTOWN_HOME" init -b main >/dev/null 2>&1 || true
+fi
+
+# --- Start town-level beads daemon ---
+# The gt daemon's convoy watcher and GUPP checks need bd daemon running
+# for the town-level .beads/ database. BEADS_DIR must be unset here so bd
+# discovers the town .beads/ instead of routing to the rig's beads.
+if [ -d "$GASTOWN_HOME/.beads" ] && command -v bd >/dev/null 2>&1; then
+  # Migrate legacy databases missing repo fingerprint (pre-0.17.5)
+  if ! (cd "$GASTOWN_HOME" && BEADS_DIR= bd daemon status >/dev/null 2>&1); then
+    # Clean stale lock files left by previous daemon instances
+    rm -f "$GASTOWN_HOME/.beads/daemon.lock"
+    (cd "$GASTOWN_HOME" && BEADS_DIR= bd migrate --update-repo-id >/dev/null 2>&1) || true
+    (cd "$GASTOWN_HOME" && BEADS_DIR= bd daemon start >/dev/null 2>&1) || true
+  fi
+fi
+
+# Unset BEADS_DIR so gt daemon's subprocess calls to bd discover town .beads/
+cd "$GASTOWN_HOME" && BEADS_DIR= gt up -q 2>/dev/null || true
 cd "$GASTOWN_HOME" && gt up -q 2>/dev/null || true
 
 # --- Daemon health watchdog ---
