@@ -20,7 +20,7 @@ fi
 
 # Initialize HQ workspace if not already present
 if [ ! -f "$GASTOWN_HOME/mayor/town.json" ]; then
-  gt install "$GASTOWN_HOME" --name dev-town 2>/dev/null || true
+  gt install "$GASTOWN_HOME" --name dev-town --git 2>/dev/null || true
 fi
 
 # Register project as a rig under the HQ (idempotent).
