@@ -97,7 +97,7 @@ COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
 COPY lib/ai-coding-utils/beads /opt/ai-coding-utils/beads
 
 # Install Python dependencies for embedded libraries
-RUN uv pip install --system --break-system-packages --python 3.11 \
+RUN uv pip install --system --break-system-packages --python /usr/local/bin/python3 \
     requests>=2.28.0 \
     pyyaml>=6.0 \
     watchdog>=3.0.0 \
