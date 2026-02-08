@@ -1,17 +1,41 @@
-FROM mcr.microsoft.com/devcontainers/base:ubuntu
+FROM debian:bookworm-slim
 
 # Build arguments for external binary versions
 ARG BEADS_VERSION=0.49.3
 ARG GASTOWN_VERSION=0.5.0
 
+# Create vscode user with sudo access (replaces devcontainers base)
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends sudo && \
+    groupadd --gid 1000 vscode && \
+    useradd --uid 1000 --gid 1000 -m -s /bin/bash vscode && \
+    echo "vscode ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/vscode && \
+    chmod 0440 /etc/sudoers.d/vscode && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up locale (bookworm-slim has none)
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends locales && \
+    sed -i 's/# en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && \
+    locale-gen && \
+    rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
+
 # Install system dependencies (excluding nodejs - installed separately below)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    gnupg2 \
+    openssh-client \
     git \
     curl \
     wget \
     build-essential \
     tmux \
     sqlite3 \
+    jq \
+    bash-completion \
+    procps \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 20 LTS via NodeSource (wrangler requires Node 20+)
@@ -73,7 +97,7 @@ COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
 COPY lib/ai-coding-utils/beads /opt/ai-coding-utils/beads
 
 # Install Python dependencies for embedded libraries
-RUN uv pip install --system --break-system-packages --python 3.11 \
+RUN uv pip install --system --break-system-packages --python /usr/local/bin/python3 \
     requests>=2.28.0 \
     pyyaml>=6.0 \
     watchdog>=3.0.0 \
