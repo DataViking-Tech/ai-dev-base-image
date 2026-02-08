@@ -65,6 +65,9 @@ test_command "tmux" "tmux -V" "tmux"
 # Test OpenAI Codex CLI
 test_command "OpenAI Codex CLI" "codex --version || which codex" ""
 
+# Test Wrangler CLI (outputs version number only, e.g., "4.63.0")
+test_command "Wrangler CLI" "wrangler --version" "[0-9]"
+
 # Test Python and ai-coding-utils modules
 echo -n "Testing ai-coding-utils modules... "
 if python3 -c "import slack; import beads" 2>/dev/null; then

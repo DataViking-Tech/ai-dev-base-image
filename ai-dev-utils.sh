@@ -25,8 +25,15 @@ if [ -d "/opt/dev-infra" ]; then
     fi
 
     # Gastown environment (init handled by ensure_gastown.sh at container create)
-    if command -v gt >/dev/null 2>&1; then
+    # Only set up gastown context when enabled (default: true)
+    if [ "${GASTOWN_ENABLED:-true}" != "false" ] && command -v gt >/dev/null 2>&1; then
         export GASTOWN_HOME="${GASTOWN_HOME:-$HOME/gt}"
+        # Source rig env to set BEADS_DIR for correct beads location.
+        # Without this, bd auto-discovers .beads/ in the project directory
+        # instead of using the rig's beads at $GASTOWN_HOME/<rig>/.beads/.
+        if [ -z "${BEADS_DIR:-}" ] && [ -f "$GASTOWN_HOME/.rig_env" ]; then
+            source "$GASTOWN_HOME/.rig_env" 2>/dev/null || true
+        fi
     fi
 
     # Directory creation component
@@ -56,8 +63,10 @@ alias bd-sync='bd sync'
 alias bd-list='bd list'
 alias py='python3'
 alias pip='pip3'
-alias gt-status='gt status'
-alias gt-doctor='gt doctor'
+if [ "${GASTOWN_ENABLED:-true}" != "false" ]; then
+    alias gt-status='gt status'
+    alias gt-doctor='gt doctor'
+fi
 
 # Extensible - projects can add their own aliases
 # Place project-specific aliases in /workspace/.devcontainer/aliases.sh

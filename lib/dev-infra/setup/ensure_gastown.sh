@@ -5,7 +5,9 @@
 # skips hook merge if hooks are already present.
 set -euo pipefail
 
-if ! command -v gt >/dev/null 2>&1; then
+# Skip gastown setup if disabled via env var (default: enabled)
+# Downstream containers can set GASTOWN_ENABLED=false in devcontainer.json containerEnv
+if [ "${GASTOWN_ENABLED:-true}" = "false" ] || ! command -v gt >/dev/null 2>&1; then
   exit 0
 fi
 
@@ -30,6 +32,15 @@ if [ -d .git ]; then
     if ! (cd "$GASTOWN_HOME" && gt rig list 2>/dev/null) | grep -q "$rig_name"; then
       (cd "$GASTOWN_HOME" && gt rig add "$rig_name" "$git_url" --local-repo "$PWD") 2>/dev/null || true
     fi
+
+    # Write rig env file so shell sessions set BEADS_DIR correctly.
+    # Without this, bd auto-discovers .beads/ in the project directory
+    # instead of using the rig's beads at $GASTOWN_HOME/<rig>/.beads/.
+    _rig_beads="$GASTOWN_HOME/$rig_name/.beads"
+    if [ -d "$_rig_beads" ] || mkdir -p "$_rig_beads" 2>/dev/null; then
+      echo "export BEADS_DIR=\"$_rig_beads\"" > "$GASTOWN_HOME/.rig_env"
+    fi
+    unset _rig_beads
   fi
 fi
 
@@ -96,7 +107,9 @@ gastown_hooks = {
     'PreToolUse': [
         hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(gh pr create*)'),
         hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(git checkout -b*)'),
-        hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(git switch -c*)')
+        hook_entry(gt_cmd('gt tap guard pr-workflow 2>/dev/null || true'), 'Bash(git switch -c*)'),
+        hook_entry(gt_cmd('gt tap guard mayor-edit 2>/dev/null || true'), 'Edit'),
+        hook_entry(gt_cmd('gt tap guard mayor-edit 2>/dev/null || true'), 'Write')
     ],
     'Stop': [hook_entry(gt_cmd('gt costs record 2>/dev/null || true'))]
 }

@@ -21,7 +21,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
 
-# Install system dependencies
+# Install system dependencies (excluding nodejs - installed separately below)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg2 \
@@ -30,7 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     build-essential \
-    nodejs \
     tmux \
     sqlite3 \
     jq \
@@ -38,6 +37,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 LTS via NodeSource (wrangler requires Node 20+)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
 RUN (type -p wget >/dev/null || (apt-get update && apt-get install -y wget)) && \
@@ -85,6 +89,9 @@ RUN ln -sf /home/vscode/.local/bin/claude /usr/local/bin/claude
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex
 
+# Install Wrangler (Cloudflare CLI) globally
+RUN bun install -g wrangler
+
 # Embed ai-coding-utils (slack notifications + beads hooks)
 COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
 COPY lib/ai-coding-utils/beads /opt/ai-coding-utils/beads
@@ -112,12 +119,16 @@ COPY lib/dev-infra/setup /opt/dev-infra/setup
 RUN chmod +x /opt/dev-infra/*.sh /opt/dev-infra/setup/*.sh \
     && chmod +x /opt/ai-coding-utils/beads/setup/ensure_beads.sh \
     && chmod +x /opt/dev-infra/setup/ensure_gastown.sh \
+    && chmod +x /opt/dev-infra/setup/ensure_crew.sh \
     && chmod +x /opt/dev-infra/setup/start_gastown_services.sh \
-    && chmod +x /opt/dev-infra/setup/start_beads_notifier.sh
+    && chmod +x /opt/dev-infra/setup/start_beads_notifier.sh \
+    && chmod +x /opt/dev-infra/setup/daemon_watchdog.sh
 
-# Copy utility documentation into the image for downstream layering
+# Copy utility documentation and defaults into the image for downstream layering
 COPY docs/UTILITIES.md /usr/local/share/image-docs/UTILITIES.md
 COPY docs/.gitattributes /usr/local/share/image-docs/.gitattributes
+COPY docs/CLAUDE.md /usr/local/share/image-docs/CLAUDE.md
+COPY docs/crew.json /usr/local/share/image-docs/crew.json
 
 # Copy auto-source script
 COPY ai-dev-utils.sh /etc/profile.d/ai-dev-utils.sh
@@ -169,7 +180,7 @@ LABEL devcontainer.metadata='[{ \
       } \
     } \
   }, \
-  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; [ ! -f .gitattributes ] && cp /usr/local/share/image-docs/.gitattributes .gitattributes 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/install-agents.sh", \
+  "postCreateCommand": "cp /usr/local/share/image-docs/UTILITIES.md .devcontainer/UTILITIES.md 2>/dev/null || true; [ ! -f .gitattributes ] && cp /usr/local/share/image-docs/.gitattributes .gitattributes 2>/dev/null || true; [ ! -f CLAUDE.md ] && cp /usr/local/share/image-docs/CLAUDE.md CLAUDE.md 2>/dev/null || true; [ ! -f .devcontainer/crew.json ] && cp /usr/local/share/image-docs/crew.json .devcontainer/crew.json 2>/dev/null || true; /opt/ai-coding-utils/beads/setup/ensure_beads.sh; /opt/dev-infra/setup/ensure_gastown.sh; /opt/dev-infra/setup/ensure_crew.sh; /opt/dev-infra/setup/install-agents.sh", \
   "postStartCommand": "/opt/dev-infra/setup/start_gastown_services.sh; /opt/dev-infra/setup/start_beads_notifier.sh" \
 }]'
 
