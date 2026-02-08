@@ -14,12 +14,3 @@ fi
 
 prefix=$(basename "$PWD")
 echo "y" | bd init --prefix "$prefix" --skip-hooks -q 2>/dev/null || true
-
-# Ensure .beads/ is in .gitignore
-if [ -d .beads ]; then
-  if [ ! -f .gitignore ]; then
-    echo ".beads/" > .gitignore
-  elif ! grep -qx '.beads/' .gitignore 2>/dev/null; then
-    echo ".beads/" >> .gitignore
-  fi
-fi
