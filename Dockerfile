@@ -100,8 +100,9 @@ RUN wget -q https://github.com/steveyegge/gastown/releases/download/v${GASTOWN_V
 ENV BUN_INSTALL="/usr/local"
 RUN curl -fsSL https://bun.sh/install | bash
 
-# Install Claude Code CLI globally (bun puts globals in $BUN_INSTALL/bin)
-RUN bun install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+# Install Claude Code CLI and copy binary to a stable PATH location.
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    if [ -x /root/.local/bin/claude ]; then install -m 0755 /root/.local/bin/claude /usr/local/bin/claude; fi
 
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex@${CODEX_VERSION}
@@ -177,6 +178,7 @@ LABEL devcontainer.metadata='[{ \
   "mounts": [ \
 	"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind", \
     "source=claude-code-config-${localWorkspaceFolderBasename},target=/home/vscode/.claude,type=volume", \
+    "source=codex-config-${localWorkspaceFolderBasename},target=/home/vscode/.codex,type=volume", \
     "source=gastown-data-${localWorkspaceFolderBasename},target=/home/vscode/gt,type=volume", \
     "source=shared-gh-auth,target=/home/vscode/.shared-auth/gh,type=volume", \
     "source=shared-claude-auth,target=/home/vscode/.shared-auth/claude,type=volume" \
