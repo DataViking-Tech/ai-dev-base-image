@@ -100,9 +100,9 @@ RUN wget -q https://github.com/steveyegge/gastown/releases/download/v${GASTOWN_V
 ENV BUN_INSTALL="/usr/local"
 RUN curl -fsSL https://bun.sh/install | bash
 
-# Install Claude Code CLI and expose binary on a stable PATH location.
+# Install Claude Code CLI and copy binary to a stable PATH location.
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    if [ -x /root/.local/bin/claude ]; then ln -sf /root/.local/bin/claude /usr/local/bin/claude; fi
+    if [ -x /root/.local/bin/claude ]; then install -m 0755 /root/.local/bin/claude /usr/local/bin/claude; fi
 
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
 RUN bun install -g @openai/codex@${CODEX_VERSION}
