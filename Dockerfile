@@ -3,6 +3,9 @@ FROM debian:bookworm-slim
 # Build arguments for external binary versions
 ARG BEADS_VERSION=0.49.3
 ARG GASTOWN_VERSION=0.5.0
+ARG CLAUDE_CODE_VERSION=2.1.41
+ARG CODEX_VERSION=0.101.0
+ARG WRANGLER_VERSION=4.65.0
 
 # Create vscode user with sudo access (replaces devcontainers base)
 RUN apt-get update && \
@@ -97,18 +100,14 @@ RUN wget -q https://github.com/steveyegge/gastown/releases/download/v${GASTOWN_V
 ENV BUN_INSTALL="/usr/local"
 RUN curl -fsSL https://bun.sh/install | bash
 
-# Install Claude Code CLI for vscode user and symlink to system path
-USER vscode
-RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-USER root
-RUN ln -sf /home/vscode/.local/bin/claude /usr/local/bin/claude
+# Install Claude Code CLI globally (bun puts globals in $BUN_INSTALL/bin)
+RUN bun install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Install OpenAI Codex CLI globally (bun puts globals in $BUN_INSTALL/bin)
-RUN bun install -g @openai/codex
+RUN bun install -g @openai/codex@${CODEX_VERSION}
 
 # Install Wrangler (Cloudflare CLI) globally
-RUN bun install -g wrangler
+RUN bun install -g wrangler@${WRANGLER_VERSION}
 
 # Embed ai-coding-utils (slack notifications + beads hooks)
 COPY lib/ai-coding-utils/slack /opt/ai-coding-utils/slack
