@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 # Build arguments for external binary versions
-ARG BEADS_VERSION=0.49.3
+ARG BEADS_VERSION=0.50.3
 ARG GASTOWN_VERSION=0.5.0
 ARG CLAUDE_CODE_VERSION=2.1.41
 ARG CODEX_VERSION=0.101.0
